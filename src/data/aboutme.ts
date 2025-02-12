@@ -23,7 +23,7 @@ export const aboutMe: AboutMe = {
   institution: "University of Centtral Florida",
   // Note that links work in the description
   description:
-    "Through my research I strive to bridge the gap between philosophy and the world, using computational methods from AI, economics, and technology to address real-world challenges. My work centers on mechanism design for social good and shaping technology policy to foster human-centric innovation. By weaving together interdisciplinary approaches, I hope to create solutions that not only solve complex problems but also uphold ethical and equitable principles.",
+    "I spend a lot of time thinking about how we design systems—whether it’s technology, policy, or markets—to better serve people. My work falls under the umbrella of mechanism design for social good, and I pull from cognitive science, artificial intelligence, economics, and even fields like robotics or art, depending on the challenge at hand. At my core, I like to experiment. Ever used a toothbrush to clean your headphones and thought, “this is kinda gross, but it works”? That’s lateral thinking—something I lean into often. Not every idea sticks, but each attempt brings new insights. In the end, I just want to make the world a marginally better place, one well-designed system at a time.",
   email: "sipho [dot] langa [at] ucf [dot] edu",
   imageUrl:
     "my-photo.png",

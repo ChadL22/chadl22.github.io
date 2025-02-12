@@ -2,7 +2,7 @@ export interface Education {
   year: string;
   institution: string;
   degree: string;
-  minor?: string;
+  advisor?: string;
   thesis?: string;
   thesisUrl?: string;
 }
@@ -12,8 +12,8 @@ export const educationData: Education[] = [
   {
     year: "Class of 2025",
     institution: "University of Central Florida",
-    degree: "B.S. in Economics and Computational Science",
-    minor: "Cognitive Science",
+    degree: "B.S. in Economics and Computational Science (Minor: Cognitive Science)",
+    advisor: "Dr. Sharon Woodill",
   },
   //{
     //year: "2017—2021",

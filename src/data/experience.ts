@@ -16,7 +16,7 @@ export const experienceData: Experience[] = [
     company: "Massachusetts Institute of Technology (MIT) - Sloan",
     description:
       "Conduct comprehensive literature reviews on Expected Parrot Domain-Specific Language (EDSL) and Schelling's Model of Segregation. Designed and implemented simulations using Mesa, SimPy, and EDSL frameworks, analyzing neighborhood segregation dynamics and urban phenomena.",
-    advisor: "Ray Reagans",
+    advisor: "Dr. Ray Reagans",
     advisorUrl: "https://mitsloan.mit.edu/faculty/directory/ray-reagans",
     //manager: "N/A",
     companyUrl: "https://mitsloan.mit.edu",

@@ -15,7 +15,7 @@ export const experienceData: Experience[] = [
     title: "Research Assistant",
     company: "Massachusetts Institute of Technology (MIT) - Sloan",
     description:
-      "Conduct comprehensive literature reviews on Expected Parrot Domain-Specific Language (EDSL) and Schelling's Model of Segregation. Designed and implemented simulations using Mesa, SimPy, and EDSL frameworks, analyzing neighborhood segregation dynamics and urban phenomena.",
+      "Researched Expected Parrot Domain-Specific Language (EDSL) and agent-based modeling for urban and social dynamics. Designed simulations using Mesa, SimPy, and EDSL to analyze segregation patterns and broader urban phenomena. Developed a capstone project and interactive assignments to illustrate these concepts in real-world applications.",
     advisor: "Dr. Ray Reagans",
     advisorUrl: "https://mitsloan.mit.edu/faculty/directory/ray-reagans",
     //manager: "N/A",
@@ -26,7 +26,7 @@ export const experienceData: Experience[] = [
     title: "Undergraduate Research Intern",
     company: "SAS Institute",
     description:
-      "Played a pivotal role in advancing SAS's quantum computing initiatives. Co-developed reinforcement learning agents for complex game environments. Developed a Unity-based virtual environment for ML and AI models, leading to applications in medical interventions and digital streaming platforms.",
+      "Advanced research in reinforcement learning, quantum computing, IoB, digital twins, and system design at SAS. Developed RL frameworks in game engines for adaptive AI and cost-efficient training. Explored IoB for behavior interventions and digital twins for simulating social dynamics and medical responses. Assessed quantum computing’s business scalability and led feasibility analysis of a sports performance technology for broader applications.",
     //advisor: "N/A",
     //manager: "N/A",
     companyUrl: "https://www.sas.com",
@@ -36,7 +36,7 @@ export const experienceData: Experience[] = [
     title: "Technical Support Specialist (AI/ML Developer)",
     company: "U.S. Hunger",
     description:
-      "Developed innovative Python-based applications for data parsing, enabling user-friendly querying akin to ChatGPT. Instrumental in creating 'Impact Manager,' a data platform providing real-time insights into community health outcomes, combating food insecurity.",
+      "Led automation, software development, and AI research to enhance operations. Developed Python solutions for internal processes, automated software testing, and optimized database management. Built custom API solutions, researched ML/AI applications for business needs, and streamlined workflows, from onboarding to Azure server management.",
     //advisor: "N/A",
     //manager: "N/A",
     companyUrl: "https://ushunger.org",

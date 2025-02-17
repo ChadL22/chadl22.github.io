@@ -20,7 +20,7 @@ export interface AboutMe {
 export const aboutMe: AboutMe = {
   name: "Sipho C. Langa",
   title: "Undergraduate Researcher",
-  institution: "University of Centtral Florida",
+  institution: "University of Central Florida",
   // Note that links work in the description
   description:
     "I spend a lot of time thinking about how we design systems—whether it’s technology, policy, or markets—to better serve people. My work falls under the umbrella of mechanism design for social good, and I pull from cognitive science, artificial intelligence, economics, and even fields like robotics or art, depending on the challenge at hand. At my core, I like to experiment. Ever used a toothbrush to clean your headphones and thought, “this is kinda gross, but it works”? That’s lateral thinking—something I lean into often. Not every idea sticks, but each attempt brings new insights. In the end, I just want to make the world a marginally better place, one well-designed system at a time.",

@@ -11,7 +11,17 @@ export interface Experience {
 
 export const experienceData: Experience[] = [
   {
-    date: "2024–Present",
+    date: "2022–Present",
+    title: "Research Engineer, Causal Inference & Machine Learning",
+    company: "SAS Institute",
+    description:
+      "I design and deploy algorithms that bridge statistical theory and machine learning practice. My work focuses on translating cutting-edge methods in econometrics, causal inference, and AI/ML into scalable, production-ready software that accelerates scientific discovery and decision-making.",
+    //advisor: "N/A",
+    //manager: "N/A",
+    companyUrl: "https://www.sas.com",
+  },
+  {
+    date: "2024–2025",
     title: "Research Assistant",
     company: "Massachusetts Institute of Technology (MIT) - Sloan",
     description:
@@ -22,18 +32,8 @@ export const experienceData: Experience[] = [
     companyUrl: "https://mitsloan.mit.edu",
   },
   {
-    date: "2022–Present",
-    title: "Undergraduate Research Intern",
-    company: "SAS Institute",
-    description:
-      "Advanced research in reinforcement learning, quantum computing, IoB, digital twins, and system design at SAS. Developed RL frameworks in game engines for adaptive AI and cost-efficient training. Explored IoB for behavior interventions and digital twins for simulating social dynamics and medical responses. Assessed quantum computing’s business scalability and led feasibility analysis of a sports performance technology for broader applications.",
-    //advisor: "N/A",
-    //manager: "N/A",
-    companyUrl: "https://www.sas.com",
-  },
-  {
     date: "2021–2024",
-    title: "Technical Support Specialist (AI/ML Developer)",
+    title: "JuniorSoftware Engineer, AI/ML",
     company: "U.S. Hunger",
     description:
       "Led automation, software development, and AI research to enhance operations. Developed Python solutions for internal processes, automated software testing, and optimized database management. Built custom API solutions, researched ML/AI applications for business needs, and streamlined workflows, from onboarding to Azure server management.",

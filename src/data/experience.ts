@@ -33,7 +33,7 @@ export const experienceData: Experience[] = [
   },
   {
     date: "2021–2024",
-    title: "JuniorSoftware Engineer, AI/ML",
+    title: "Junior Software Engineer, AI/ML",
     company: "U.S. Hunger",
     description:
       "Led automation, software development, and AI research to enhance operations. Developed Python solutions for internal processes, automated software testing, and optimized database management. Built custom API solutions, researched ML/AI applications for business needs, and streamlined workflows, from onboarding to Azure server management.",

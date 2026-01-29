@@ -23,7 +23,9 @@ export const aboutMe: AboutMe = {
   institution: "SAS Institute",
   // Note that links work in the description
   description:
-    "I study the design and governance of institutions and sociotechnical systems using microeconomic theory and public policy as primary lenses, with supporting methods from ethics, law, mathematics, and computer science.",
+    "I study the design and governance of institutions and sociotechnical systems using microeconomic theory and public policy as primary lenses, with supporting methods from ethics, law, mathematics, and computer science.\n\n" +
+    "Professionally, I am a Research Software Engineer working on causal inference and causal machine learning, with an emphasis on modeling causal relationships, evaluating counterfactual scenarios, and producing predictions that remain robust under changing conditions. In parallel with my technical work, I engage in policy and governance analysis related to technology through independent and volunteer-based efforts. While separate from my formal role, this work informs how I think about system design, deployment, and institutional constraints.\n\n" +
+    "Taken together, my technical work and independent research reflect a consistent interest in how formal methods—economic, computational, and legal—can be used to design and evaluate mechanisms that operate within real institutional settings.",
   email: "sclanga [at] proton [dot] me",
   imageUrl:
     "my-photo.png",

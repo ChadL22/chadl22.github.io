@@ -11,6 +11,8 @@ import { experienceData } from "@/data/experience";
 import { PortfolioEntry } from "@/components/portfolio-entry";
 import { portfolioData } from "@/data/portfolio";
 import { sectionOrder, Section } from "@/data/section-order";
+import { SectionNav } from "@/components/section-nav";
+import { CollapsibleSection } from "@/components/collapsible-section";
 
 export default function Home() {
   return (
@@ -23,6 +25,9 @@ export default function Home() {
           <div className="col-span-12 md:col-span-4 space-y-12 mb-8 md:mb-0">
             {/* Profile */}
             <div className="md:sticky top-12 space-y-8">
+              <div className="hidden md:block">
+                <SectionNav />
+              </div>
               <ProfileSection aboutMe={aboutMe} />
             </div>
           </div>
@@ -39,6 +44,11 @@ export default function Home() {
               </section>
             )}
 
+            {/* Dropdown nav for sections (mobile/left-column) */}
+            <div className="md:hidden">
+              <SectionNav />
+            </div>
+
             {/* Map through sectionOrder to render sections in correct order */}
             {sectionOrder.map((sectionName) => {
               // Most of this is redundant... but in case it needs to be unique.
@@ -46,10 +56,7 @@ export default function Home() {
                 case Section.News:
                   return (
                     newsData.length > 0 && (
-                      <section key={sectionName}>
-                        <h2 className="font-serif text-l mb-12 tracking-wide uppercase">
-                          News
-                        </h2>
+                      <CollapsibleSection key={sectionName} id={sectionName} title="News">
                         <div className="space-y-12">
                           {newsData.map((news, index) => (
                             <div key={index}>
@@ -57,31 +64,25 @@ export default function Home() {
                             </div>
                           ))}
                         </div>
-                      </section>
+                      </CollapsibleSection>
                     )
                   );
                 case Section.Education:
                   return (
                     educationData.length > 0 && (
-                      <section key={sectionName}>
-                        <h2 className="font-serif text-zinc-700 mb-12 tracking-wide uppercase">
-                          Education
-                        </h2>
+                      <CollapsibleSection key={sectionName} id={sectionName} title="Education">
                         <div className="space-y-12">
                           {educationData.map((education, index) => (
                             <EducationEntry key={index} education={education} />
                           ))}
                         </div>
-                      </section>
+                      </CollapsibleSection>
                     )
                   );
                 case Section.Publication:
                   return (
                     publicationData.length > 0 && (
-                      <section key={sectionName}>
-                        <h2 className="font-serif text-l mb-12 tracking-wide uppercase">
-                          Publications
-                        </h2>
+                      <CollapsibleSection key={sectionName} id={sectionName} title="Publications">
                         <div className="space-y-12">
                           {publicationData.map((publication, index) => (
                             <div key={index}>
@@ -92,16 +93,13 @@ export default function Home() {
                             </div>
                           ))}
                         </div>
-                      </section>
+                      </CollapsibleSection>
                     )
                   );
                 case Section.Experience:
                   return (
                     experienceData.length > 0 && (
-                      <section key={sectionName}>
-                        <h2 className="font-serif text-md mb-12 tracking-wide uppercase">
-                          Experience
-                        </h2>
+                      <CollapsibleSection key={sectionName} id={sectionName} title="Experience">
                         <div className="space-y-12">
                           {experienceData.map((experience, index) => (
                             <ExperienceEntry
@@ -110,22 +108,19 @@ export default function Home() {
                             />
                           ))}
                         </div>
-                      </section>
+                      </CollapsibleSection>
                     )
                   );
                 case Section.Portfolio:
                   return (
                     portfolioData.length > 0 && (
-                      <section key={sectionName}>
-                        <h2 className="font-serif text-md mb-12 tracking-wide uppercase">
-                          Portfolio
-                        </h2>
+                      <CollapsibleSection key={sectionName} id={sectionName} title="Portfolio">
                         <div className="space-y-12">
                           {portfolioData.map((portfolio, index) => (
                             <PortfolioEntry key={index} portfolio={portfolio} />
                           ))}
                         </div>
-                      </section>
+                      </CollapsibleSection>
                     )
                   );
                 default:

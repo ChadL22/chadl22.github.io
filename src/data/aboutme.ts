@@ -23,9 +23,8 @@ export const aboutMe: AboutMe = {
   institution: "SAS Institute",
   // Note that links work in the description
   description: `
-    <p>I study the design and governance of institutions and sociotechnical systems using microeconomic theory and public policy as primary lenses, with supporting methods from ethics, law, mathematics, and computer science.</p>
-    <p>Professionally, I am a Research Software Engineer working on causal inference and causal machine learning, with an emphasis on modeling causal relationships, evaluating counterfactual scenarios, and producing predictions that remain robust under changing conditions. In parallel with my technical work, I engage in policy and governance analysis related to technology through independent and volunteer-based efforts. While separate from my formal role, this work informs how I think about system design, deployment, and institutional constraints.</p>
-    <p>Taken together, my technical work and independent research reflect a consistent interest in how formal methods—economic, computational, and legal—can be used to design and evaluate mechanisms that operate within real institutional settings.</p>
+    <p>Professionally, I am a Research Software Engineer whose work centers on Causal AI, an area of AI research that aims to equip machines with the ability to discern causal relations, reason over counterfactual alternatives, and produce predictions that remain robust to changing conditions. In parallel with my technical work, I engage in policy and governance analysis related to technology through independent and volunteer-based efforts. While separate from my formal role, this work informs how I approach the design and evaluation of systems operating within institutional constraints.</p>
+    <p>This perspective carries into my research on the design and governance of institutions and sociotechnical systems. I draw primarily on microeconomic theory and public policy, with mechanism design guiding my analysis of incentives, rules, and information structures, while borrowing methods from ethics, law, mathematics, and computer science.</p>
   `,
   email: "sclanga [at] proton [dot] me",
   imageUrl:

@@ -6,20 +6,26 @@ export interface News {
 }
 
 export const newsData: News[] = [
+   {
+    date: "2025",
+    title: "ISI Honors Conference",
+    description: "Honored to be selected to attend the ISI Honors Conference in 2025, where I'll engage with fellow scholars and academics as we discuss the foundations of the American order.",
+    link: "https://isi.org/event/isi-honors-conference-2025/",
+  }
   {
-    date: "March 2025",
+    date: "2025",
     title: "Attending the 2025 Responsible AI Symposium",
     description: "Exciting news! I will be attending the 2025 Responsible AI Symposium at Duke University. Looking forward to some good presentations and great conversations!",
     link: "https://www.responsibleaisymposium.com/",
   },
   {
-    date: "February 2025",
+    date: "2025",
     title: "A Beginner's Guide to Computational Modeling of Human Behavior",
     description: "I recently created a GitHub page focused on computational models of human behavior. This repository is meant to help newcomers get their bearings in this complex and interdisciplinary field. While it's still a work in progress, it already has some useful tips and resources to help you get started!.",
     link: "https://github.com/ChadL22/A-Beginner-s-Guide-to-Computational-Models-of-Human-Behavior/tree/main?tab=readme-ov-file#resources",
   },
   {
-    date: "January 2025",
+    date: "2025",
     title: "MIT AI Negotiation Competition",
     description: "Accepted to the prestigious MIT AI Negotiation Competition, focusing on interdisciplinary AI research.",
     link: "https://ide.mit.edu/events/mit-ai-negotiation-competition/",

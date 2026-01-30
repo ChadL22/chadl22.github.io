@@ -11,7 +11,7 @@ export const newsData: News[] = [
     title: "ISI Honors Conference",
     description: "Honored to be selected to attend the ISI Honors Conference in 2025, where I'll engage with fellow scholars and academics as we discuss the foundations of the American order.",
     link: "https://isi.org/event/isi-honors-conference-2025/",
-  }
+  },
   {
     date: "2025",
     title: "Attending the 2025 Responsible AI Symposium",

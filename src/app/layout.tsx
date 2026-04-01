@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Serif, PT_Serif } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { aboutMe } from "@/data/aboutme";
 import { customMetadata } from "@/data/title-description";
@@ -69,6 +70,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        <Script src="/enhanced-navigation.js" strategy="afterInteractive" />
       </body>
     </html>
   );

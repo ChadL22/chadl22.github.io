@@ -15,7 +15,7 @@ export const newsData: News[] = [
   {
     date: "2025",
     title: "Launching Phronesis Research",
-    description: "Excited to announce the launch of Phronesis Research, an independent research initiative focused on the intersection of technology, society, and practical wisdom. Learn more at PhronesisResearch.org.",
+    description: "Excited to announce the launch of Phronesis Research, an independent research initiative focused on the intersection of technology, policy, and law. Learn more about it at PhronesisResearch.org.",
     link: "https://phronesisresearch.org",
   },
    {

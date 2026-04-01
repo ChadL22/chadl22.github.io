@@ -359,10 +359,8 @@
       const newsSection = document.getElementById('news');
       if (!newsSection) return;
       
-      // Find all news items (look for common patterns)
-      const newsItems = Array.from(newsSection.children).filter(child => {
-        return child.querySelector('.year') || child.querySelector('h3');
-      });
+      // Find all news items using querySelectorAll
+      const newsItems = newsSection.querySelectorAll('.news-item');
       
       // Filter items
       newsItems.forEach(item => {
@@ -404,9 +402,7 @@
       // Show all items
       const newsSection = document.getElementById('news');
       if (newsSection) {
-        const newsItems = Array.from(newsSection.children).filter(child => {
-          return child.querySelector('.year') || child.querySelector('h3');
-        });
+        const newsItems = newsSection.querySelectorAll('.news-item');
         
         newsItems.forEach(item => {
           item.classList.remove('filtered-out');

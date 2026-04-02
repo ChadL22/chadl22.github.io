@@ -20,9 +20,9 @@ export const portfolioData: Portfolio[] = [
   {
     title: "Breaking Patterns: Exploring Diversity in Music Recommendations",
     description:
-      "A Google Colab notebook proposing an algorithmic framework inspired by Szemerédi's Theorem to break repetitive patterns in music recommendations. This project aims to enhance diversity and serendipity while maintaining user satisfaction on Digital Streaming Platforms.",
+      "A Google Colab notebook proposing an algorithmic framework inspired by Szemerédi's Theorem to break repetitive patterns in music recommendations. This project aims to enhance diversity and serendipity while maintaining user satisfaction on Digital Streaming Platforms. This work is now being contributed to Parachord as a plugin.",
     technologies: ["Python", "Colab", "Szemerédi's Theorem"],
-    projectUrl: "https://colab.research.google.com/drive/1RjVy8d1PUhN25oEpLf3F4rjkP7cWFZBX?usp=sharing",
+    projectUrl: "https://parachord.com/",
     //imageUrl: "/images/music_recommendations.jpg", // Add an appropriate image in the `public/images` folder
     codeUrl: "https://github.com/siphoclanga/music-diversity-framework", // Replace with the GitHub repo if applicable
   },

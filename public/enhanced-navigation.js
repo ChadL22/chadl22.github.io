@@ -260,6 +260,21 @@
             right: 15px;
             width: 120px;
             top: 80px;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+          }
+          
+          #enhanced-nav.hidden-mobile {
+            transform: translateX(calc(100% + 30px)) !important;
+            opacity: 0;
+          }
+          
+          /* When year filter is active, push nav down */
+          #enhanced-nav.below-filter {
+            top: 180px !important;
+          }
+          
+          .year-filter-active {
+            z-index: 10001;
           }
         }
       </style>
@@ -286,6 +301,28 @@
         scrollToSection(section);
       });
     });
+    
+    // Add swipe functionality for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    nav.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    
+    nav.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+    
+    function handleSwipe() {
+      const swipeDistance = touchEndX - touchStartX;
+      if (swipeDistance > 50) { // Swipe right to hide
+        nav.classList.add('hidden-mobile');
+      } else if (swipeDistance < -50) { // Swipe left to show
+        nav.classList.remove('hidden-mobile');
+      }
+    }
   }
 
   function createBackToTop() {
@@ -464,6 +501,14 @@
         nav.classList.add('visible');
       } else {
         nav.classList.remove('visible');
+      }
+      
+      // Check if year filter is active and adjust nav position on mobile
+      const yearFilter = document.querySelector('.year-filter-active');
+      if (yearFilter && window.innerWidth <= 768) {
+        nav.classList.add('below-filter');
+      } else {
+        nav.classList.remove('below-filter');
       }
 
       // Show/hide back to top

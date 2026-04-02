@@ -32,7 +32,7 @@ export default function Home() {
             {/* About section is typically first */}
             {aboutMe.description && (
               <section>
-                <h2 className="font-serif text-l mb-12 tracking-wide uppercase">
+                <h2 className="font-serif text-l mb-8 tracking-wide uppercase">
                   About Me
                 </h2>
                 <div

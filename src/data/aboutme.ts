@@ -32,7 +32,7 @@ export const aboutMe: AboutMe = {
   //googleScholarUrl: "https://scholar.google.com/citations?user=bWtMl_MAAAAJ",
   githubUsername: "ChadL22",
   twitterUsername: "sc_langa",
-  blogUrl: "https://",
+  blogUrl: "https://phronesisresearch.org",
   //cvUrl: "https://",
   institutionUrl: "https://www.sas.com/",
   // altName: "",

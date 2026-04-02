@@ -7,13 +7,13 @@ export interface News {
 
 export const newsData: News[] = [
   {
-    date: "2025",
+    date: "2026",
     title: "Emerging Tech For Social Good Summit",
     description: "Attending the Emerging Tech For Social Good Summit to explore how emerging technologies can be leveraged to address social challenges and create positive impact.",
     link: "https://luma.com/CLTSG",
   },
   {
-    date: "2025",
+    date: "2026",
     title: "Launching Phronesis Research",
     description: "Excited to announce the launch of Phronesis Research, an independent research initiative focused on the intersection of technology, policy, and law. Learn more about it at PhronesisResearch.org.",
     link: "https://phronesisresearch.org",

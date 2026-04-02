@@ -18,9 +18,9 @@ export function PortfolioEntry({ portfolio }: { portfolio: Portfolio }) {
       )}
       <div className="flex flex-col flex-1">
         <h3 className="font-serif text-md mb-3">
-          {portfolio.projectUrl ? (
+          {portfolio.writtenUrl ? (
             <a
-              href={portfolio.projectUrl}
+              href={portfolio.writtenUrl}
               className="group inline-flex items-center gap-2 hover:text-zinc-600 transition-colors duration-300"
             >
               {portfolio.title}

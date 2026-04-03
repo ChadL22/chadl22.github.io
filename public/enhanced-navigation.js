@@ -279,10 +279,11 @@
         }
         
         @media (min-width: 769px) and (max-width: 1024px) {
-          /* Tablet view - move nav to left side */
+          /* Tablet view - move nav to left side, below profile section */
           #enhanced-nav {
             left: 15px;
             right: auto;
+            top: 680px; /* Position below GitHub link */
           }
           
           #enhanced-nav.visible {

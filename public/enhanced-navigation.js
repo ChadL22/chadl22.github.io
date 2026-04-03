@@ -283,7 +283,8 @@
           #enhanced-nav {
             left: 15px;
             right: auto;
-            top: 680px; /* Position below GitHub link */
+            top: auto;
+            bottom: 30px; /* Position from bottom instead of top */
           }
           
           #enhanced-nav.visible {

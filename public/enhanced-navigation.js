@@ -277,6 +277,23 @@
             z-index: 10001;
           }
         }
+        
+        @media (min-width: 769px) and (max-width: 1024px) {
+          /* Tablet view - move nav to left side */
+          #enhanced-nav {
+            left: 15px;
+            right: auto;
+          }
+          
+          #enhanced-nav.visible {
+            opacity: 1;
+            transform: translateX(0);
+          }
+          
+          #enhanced-nav:not(.visible) {
+            transform: translateX(-160px);
+          }
+        }
       </style>
     `;
     document.head.insertAdjacentHTML('beforeend', styles);

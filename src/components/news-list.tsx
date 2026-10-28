@@ -10,9 +10,13 @@ function NewsRow({ news }: { news: News }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <li className="news-item py-3 border-b border-zinc-200 last:border-b-0">
+    <li className="news-item py-2">
       <div className="flex items-start justify-between gap-4">
-        <h3 className="font-serif text-sm leading-snug">
+        <h3 className="font-serif text-sm leading-snug flex items-start gap-2.5">
+          <span
+            aria-hidden="true"
+            className="mt-[0.45rem] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-600"
+          />
           {news.link ? (
             <a
               href={news.link}
@@ -46,7 +50,7 @@ function NewsRow({ news }: { news: News }) {
         )}
       </div>
       {open && (
-        <p className="text-sm text-zinc-600 leading-relaxed mt-2">
+        <p className="text-sm text-zinc-600 leading-relaxed mt-1.5 pl-4">
           {news.description}
         </p>
       )}
@@ -72,10 +76,13 @@ export function NewsList({ items }: { items: News[] }) {
   const hiddenCount = items.length - INITIAL_COUNT;
 
   return (
-    <div className="space-y-8">
+    <div>
       {groups.map((group, i) => (
-        <div key={`${group.year}-${i}`} className="grid grid-cols-[4.5rem_1fr] gap-4">
-          <p className="text-xs text-zinc-500 pt-3.5 tracking-wide">{group.year}</p>
+        <div
+          key={`${group.year}-${i}`}
+          className="grid grid-cols-[4.5rem_1fr] gap-4 py-4 border-t border-zinc-200 first:border-t-0 first:pt-0"
+        >
+          <p className="text-xs text-zinc-500 pt-2.5 tracking-wide">{group.year}</p>
           <ul>
             {group.items.map((news, j) => (
               <NewsRow key={j} news={news} />
@@ -87,7 +94,7 @@ export function NewsList({ items }: { items: News[] }) {
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="group inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-900 transition-colors duration-300"
+          className="group mt-4 inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-900 transition-colors duration-300"
         >
           <ChevronDown
             size={12}

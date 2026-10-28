@@ -8,6 +8,12 @@ export interface News {
 export const newsData: News[] = [
   {
     date: "2026",
+    title: "Phronesis. The Tech Policy Library.",
+    description: "Phronesis has been rebranded as The Tech Policy Library: a curated research library for technologists, legal professionals, and policymakers exploring the intersection of technology, law, and policy. We provide policymakers, technologists, and legal professionals with free access to primary and secondary technology policy resources, each hand-selected for relevance and quality.",
+    link: "https://phronesisresearch.org",
+  },
+  {
+    date: "2026",
     title: "Emerging Tech For Social Good Summit",
     description: "Attending the Emerging Tech For Social Good Summit to explore how emerging technologies can be leveraged to address social challenges and create positive impact.",
     link: "https://luma.com/CLTSG",

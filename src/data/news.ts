@@ -49,7 +49,7 @@ export const newsData: News[] = [
     link: "https://ais25.org", // Replace with actual conference link if available
   },
   {
-    date: "2024–2025",
+    date: "2024",
     title: "Predoc.org Advisory Board",
     description: "Joined the advisory board for Predoc.org to help guide initiatives that bridge academia and industry for early-career researchers.",
     link: "https://www.predoc.org",

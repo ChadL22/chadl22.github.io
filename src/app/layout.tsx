@@ -29,9 +29,7 @@ const ptSerif = PT_Serif({
 export const metadata: Metadata = {
   title: customMetadata.title || aboutMe.name,
   description: customMetadata.description || aboutMe.description,
-  icons: {
-    icon: "/favicon.ico",
-  },
+  // Icons come from src/app/favicon.ico, icon.svg and apple-icon.png (Next.js file conventions)
 };
 
 export default function RootLayout({

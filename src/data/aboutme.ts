@@ -15,6 +15,7 @@ export interface AboutMe {
   secretDescription?: string; // Gets placed in the bottom
   altName?: string;
   institutionUrl?: string;
+  additionalRoles?: { title: string; institution: string; institutionUrl?: string }[];
 }
 
 export const aboutMe: AboutMe = {
@@ -35,6 +36,13 @@ export const aboutMe: AboutMe = {
   blogUrl: "https://phronesisresearch.org",
   //cvUrl: "https://",
   institutionUrl: "https://www.sas.com/",
+  additionalRoles: [
+    {
+      title: "Co-Lead",
+      institution: "University of Maryland Tech Policy Hub",
+      institutionUrl: "https://techpolicy.info.umd.edu/",
+    },
+  ],
   // altName: "",
   // secretDescription: "I like dogs.",
 };

@@ -58,6 +58,27 @@ export function ProfileSection({ aboutMe }: ProfileSectionProps) {
             aboutMe.institution
           )}
         </p>
+        {aboutMe.additionalRoles?.map((role, index) => (
+          <p
+            key={index}
+            className="text-zinc-600 text-xs leading-relaxed tracking-wide uppercase mb-6"
+          >
+            {role.title}
+            <br />
+            {role.institutionUrl ? (
+              <a
+                href={role.institutionUrl}
+                className="hover:text-zinc-900 transition-colors duration-300"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {role.institution}
+              </a>
+            ) : (
+              role.institution
+            )}
+          </p>
+        ))}
         <div className="flex gap-6 mb-6">
           {aboutMe.blogUrl && (
             <a

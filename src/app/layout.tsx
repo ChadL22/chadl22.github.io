@@ -44,10 +44,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} ${ptSerif.variable} antialiased`}
       >
         <main className="">{children}</main>
-        <footer className="border-t border-neutral-200 dark:border-neutral-800 bg-[#FFFCF8]">
-          <div className="mx-auto max-w-7xl px-6 pt-6">
-            <DogRun />
-          </div>
+        {/* The dogs run along the page partition; it breaks open into the game */}
+        <div className="bg-[#FFFCF8]">
+          <DogRun />
+        </div>
+        <footer className="bg-[#FFFCF8]">
           <div className="flex flex-row mx-auto max-w-7xl px-6 py-12 md:flex md:items-start md:justify-between ">
             <div className="mb-4 text-sm text-neutral-600 dark:text-neutral-400">
               <p>

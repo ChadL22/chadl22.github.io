@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from "react";
  */
 
 type Breed = "lab" | "aussie" | "springer";
-type Mode = "ambient" | "playing" | "over";
+type Mode = "ambient" | "intro" | "playing" | "over";
 type Pose = "run" | "air" | "crawl" | "sad" | "stand";
 type Quarry = "squirrel" | "duck";
 type ObKind = "bush" | "hydrant" | "fence" | "tire" | "hole";
@@ -543,7 +543,27 @@ interface Game {
   quarryX: number;
   hintUntil: number;
   scroll: number; // distance run, drives the parallax scenery
+  // Where the pack is in the idle chase (used to start the intro from the right spot)
+  ambientDogs: { breed: Breed; i: number; x: number }[];
+  ambientDir: 1 | -1;
+  intro: Intro | null;
 }
+
+/** The partition breaks and the dogs slide down into the game. */
+interface Intro {
+  start: number;
+  crackX: number;
+  lead: number;
+  dir: 1 | -1;
+  dogs: { breed: Breed; x0: number }[]; // chaser first
+}
+
+const LINE_Y = AMBIENT_H - 8; // the partition line the idle dogs run on
+const PARTITION_COLOR = "#E5E5E5";
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const easeOut = (v: number) => 1 - (1 - v) * (1 - v);
+const easeInOut = (v: number) => (v < 0.5 ? 2 * v * v : 1 - Math.pow(-2 * v + 2, 2) / 2);
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 
 function readBest(): number {
   try {
@@ -561,8 +581,10 @@ function writeBest(v: number) {
   }
 }
 
-function atBottomOfPage() {
-  return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 24;
+/** Space only starts the game when the dogs are fully on screen. */
+function onScreen(el: HTMLElement) {
+  const r = el.getBoundingClientRect();
+  return r.top >= 0 && r.bottom <= window.innerHeight;
 }
 
 /** Triangle wave: position along a back-and-forth path of length `travel`, and direction. */
@@ -594,6 +616,9 @@ export function DogRun() {
     quarryX: 0,
     hintUntil: 0,
     scroll: 0,
+    ambientDogs: [],
+    ambientDir: 1,
+    intro: null,
   });
 
   useEffect(() => {
@@ -638,13 +663,35 @@ export function DogRun() {
       g.crashed = false;
       g.followers = [];
       g.quarry = Math.random() < 0.5 ? "squirrel" : "duck";
-      g.quarryX = LEAD_X + 110;
+      g.quarryX = canvas.clientWidth + 30; // runs in from the right
       g.hintUntil = clock + 2.6;
       g.scroll = 0;
+      g.intro = null;
       setGameMode("playing");
+    };
+
+    const scrollGameIntoView = () =>
       requestAnimationFrame(() =>
-        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" })
+        canvas.scrollIntoView({ behavior: "smooth", block: "center" })
       );
+
+    // From the idle chase: crack the partition, slide the dogs down, open the park
+    const startIntro = () => {
+      if (reduceMotion || g.ambientDogs.length === 0) {
+        startGame(g.ambientFront);
+        scrollGameIntoView();
+        return;
+      }
+      const ordered = [...g.ambientDogs].reverse(); // front dog first
+      g.intro = {
+        start: clock,
+        crackX: ordered[0].x + g.ambientDir * 34,
+        lead: ordered[0].i,
+        dir: g.ambientDir,
+        dogs: ordered.map((d) => ({ breed: d.breed, x0: d.x })),
+      };
+      setGameMode("intro");
+      scrollGameIntoView();
     };
 
     const jump = () => {
@@ -663,8 +710,9 @@ export function DogRun() {
       // The other two run up from behind to play with the sad chaser
       g.followers = [1, 2].map((i) => ({
         breed: BREEDS[(g.lead + i) % 3],
-        x: -40 - i * 50,
-        targetX: LEAD_X - 46 * i,
+        // They come back from where they dashed off (the right) and stop beside their friend
+        x: canvas.clientWidth + 40 + i * 50,
+        targetX: LEAD_X + 30 + 46 * i,
         phase: i * 1.7,
       }));
       setGameMode("over");
@@ -675,7 +723,12 @@ export function DogRun() {
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
 
       if (e.code === "Escape" && g.mode !== "ambient") {
+        g.intro = null;
         setGameMode("ambient");
+        return;
+      }
+      if (g.mode === "intro") {
+        if (e.code === "Space") e.preventDefault();
         return;
       }
       if (g.mode === "playing" && (e.code === "ArrowDown" || e.code === "KeyS")) {
@@ -687,9 +740,9 @@ export function DogRun() {
       const isJump = e.code === "Space" || (g.mode === "playing" && e.code === "ArrowUp");
       if (!isJump) return;
       if (g.mode === "ambient") {
-        if (!atBottomOfPage()) return; // only from the bottom of the page
+        if (!onScreen(canvas)) return; // only when the dogs are in view
         e.preventDefault();
-        startGame(g.ambientFront);
+        startIntro();
       } else if (g.mode === "playing") {
         e.preventDefault();
         jump();
@@ -708,7 +761,7 @@ export function DogRun() {
     let downY: number | null = null;
     const onPointerDown = (e: PointerEvent) => {
       downY = e.clientY;
-      if (g.mode === "ambient") startGame(g.ambientFront);
+      if (g.mode === "ambient") startIntro();
       else if (g.mode === "over") startGame((g.lead + 1) % 3);
     };
     const onPointerUp = (e: PointerEvent) => {
@@ -747,8 +800,9 @@ export function DogRun() {
     };
 
     const drawAmbient = (w: number, h: number) => {
-      const gy = h - 8;
-      ground(w, gy, "#E4E4E7");
+      void h;
+      const gy = LINE_Y;
+      ground(w, gy, PARTITION_COLOR); // the page partition doubles as the dogs' ground
 
       const t = reduceMotion ? 3 : clock;
       const margin = 60;
@@ -773,6 +827,8 @@ export function DogRun() {
       }));
       dogs.sort((a, b) => pack.dir * a.x - pack.dir * b.x); // front dog draws last
       g.ambientFront = dogs[dogs.length - 1].i;
+      g.ambientDogs = dogs.map((d) => ({ breed: d.breed, i: d.i, x: d.x }));
+      g.ambientDir = pack.dir;
       for (const d of dogs) {
         const lift = reduceMotion ? 0 : 2 * Math.abs(Math.sin(d.phase));
         drawDog(ctx, d.breed, d.x, gy, pack.dir, d.phase, lift, reduceMotion ? "stand" : "run");
@@ -801,7 +857,7 @@ export function DogRun() {
         // Quarry escapes; friends run up
         g.quarryX += 300 * dt;
         for (const f of g.followers) {
-          if (f.x < f.targetX) f.x = Math.min(f.targetX, f.x + 240 * dt);
+          if (f.x > f.targetX) f.x = Math.max(f.targetX, f.x - 320 * dt);
         }
         return;
       }
@@ -809,7 +865,9 @@ export function DogRun() {
       g.speed = Math.min(MAX_SPEED, g.speed + 8 * dt);
       g.score += (g.speed * dt) / 10;
       g.scroll += g.speed * dt;
-      g.quarryX = LEAD_X + 110 + 8 * Math.sin(clock * 1.3);
+      // Quarry runs in from the right, then keeps just ahead of the chaser
+      const qTarget = LEAD_X + 110 + 8 * Math.sin(clock * 1.3);
+      g.quarryX += (qTarget - g.quarryX) * Math.min(1, dt * 2.5);
 
       const dogCenter = LEAD_X + 4;
       for (const o of g.obstacles) {
@@ -878,8 +936,8 @@ export function DogRun() {
 
       // Friends who ran up after the miss
       for (const f of g.followers) {
-        const arrived = f.x >= f.targetX;
-        drawDog(ctx, f.breed, f.x, gy, 1, clock * 13 + f.phase, arrived ? 0 : 2 * Math.abs(Math.sin(clock * 13 + f.phase)), arrived ? "stand" : "run");
+        const arrived = f.x <= f.targetX;
+        drawDog(ctx, f.breed, f.x, gy, -1, clock * 13 + f.phase, arrived ? 0 : 2 * Math.abs(Math.sin(clock * 13 + f.phase)), arrived ? "stand" : "run");
       }
 
       // The chaser
@@ -928,6 +986,121 @@ export function DogRun() {
       }
     };
 
+    /**
+     * Intro, about 2 seconds:
+     *   0.00–0.45  the partition cracks under the front dog and shakes
+     *   0.45–0.75  it breaks open into two trapdoor flaps
+     *   0.55–1.40  the dogs slide down through the gap, chaser first
+     *   0.75–1.50  the park opens out from the hole (iris wipe)
+     *   then the chaser trots to its spot, the others run off, and play begins
+     */
+    const drawIntro = (w: number, h: number) => {
+      const it = g.intro;
+      if (!it) return;
+      const T = clock - it.start;
+      const gy = h - GROUND_PAD;
+      const half = 70;
+      const hingeL = it.crackX - half;
+      const hingeR = it.crackX + half;
+
+      // Partition: intact edges, plus a cracked middle that opens like trapdoors
+      const shake = T < 0.45 ? Math.sin(T * 90) * 0.8 : 0;
+      const ly = LINE_Y + 0.5 + shake;
+      ctx.strokeStyle = PARTITION_COLOR;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, ly);
+      ctx.lineTo(hingeL, ly);
+      ctx.moveTo(hingeR, ly);
+      ctx.lineTo(w, ly);
+      ctx.stroke();
+
+      const open = easeOut(clamp01((T - 0.45) / 0.3));
+      if (open === 0) {
+        ctx.beginPath();
+        ctx.moveTo(hingeL, ly);
+        ctx.lineTo(hingeR, ly);
+        ctx.stroke();
+        // The crack spreads out from under the dog
+        const spread = 6 + clamp01(T / 0.4) * 22;
+        const steps = Math.max(2, Math.round((spread * 2) / 4));
+        ctx.strokeStyle = "#71717A";
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        for (let j = 0; j <= steps; j++) {
+          const cx = it.crackX - spread + (j * spread * 2) / steps;
+          const cy = ly + (j % 2 === 0 ? -2.5 : 2.5);
+          if (j === 0) ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+      } else {
+        const a = open * 1.05;
+        ctx.strokeStyle = "#D4D4D8";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(hingeL, ly);
+        ctx.lineTo(hingeL + half * Math.cos(a), ly + half * Math.sin(a));
+        ctx.moveTo(hingeR, ly);
+        ctx.lineTo(hingeR - half * Math.cos(a), ly + half * Math.sin(a));
+        ctx.stroke();
+      }
+
+      // The park opens out from the hole
+      const iris = easeInOut(clamp01((T - 0.75) / 0.75)) * Math.hypot(w, h);
+      if (iris > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(it.crackX, LINE_Y, iris, 0, Math.PI * 2);
+        ctx.clip();
+        drawScenery(ctx, w, h, gy, 0);
+        ctx.restore();
+      }
+
+      // Dogs slide down the flap into the hole, one after another
+      it.dogs.forEach((d, i) => {
+        const t0 = 0.55 + i * 0.14;
+        const s = clamp01((T - t0) / 0.55);
+        const phase = clock * 13 + i * 1.7;
+        let x = d.x0;
+        let y = LINE_Y;
+        let pose: Pose = "stand";
+        let facing: 1 | -1 = it.dir;
+        if (s > 0 && s < 0.45) {
+          const k = s / 0.45;
+          x = lerp(d.x0, it.crackX, k);
+          y = LINE_Y + k * k * 22;
+          pose = "run";
+          facing = it.crackX >= d.x0 ? 1 : -1;
+        } else if (s >= 0.45 && s < 1) {
+          const k = (s - 0.45) / 0.55;
+          x = it.crackX + (i - 1) * 8;
+          y = lerp(LINE_Y + 22, gy, k * k);
+          pose = "air";
+        } else if (s >= 1) {
+          // Landed: the chaser trots to its spot; the others run off for now
+          const k = clamp01((T - t0 - 0.55) / 0.4);
+          y = gy;
+          pose = "run";
+          if (i === 0) {
+            x = lerp(it.crackX, LEAD_X, easeInOut(k));
+            facing = LEAD_X >= it.crackX ? 1 : -1;
+            if (k >= 1) {
+              pose = "stand";
+              facing = 1;
+            }
+          } else {
+            // The other two dash off ahead (they'll be back if the chaser misses)
+            x = lerp(it.crackX + (i - 1) * 8, w + 80, k);
+            facing = 1;
+          }
+        }
+        drawDog(ctx, d.breed, x, y, facing, phase, 0, pose);
+      });
+
+      if (T > 2.05) startGame(it.lead);
+    };
+
     const frame = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
@@ -938,6 +1111,8 @@ export function DogRun() {
         ctx.clearRect(0, 0, w, h);
         if (g.mode === "ambient") {
           drawAmbient(w, h);
+        } else if (g.mode === "intro") {
+          drawIntro(w, h);
         } else {
           updateGame(dt, w);
           drawGame(w, h);
@@ -961,13 +1136,13 @@ export function DogRun() {
     <div className="w-full">
       <canvas
         ref={canvasRef}
-        className={`block w-full select-none ${mode === "ambient" ? "touch-manipulation" : "touch-none rounded-xl"}`}
+        className={`block w-full select-none ${mode === "ambient" ? "touch-manipulation" : "touch-none"}`}
         style={{ height: mode === "ambient" ? AMBIENT_H : GAME_H }}
         role="img"
         aria-label="A chocolate lab, a red merle Australian shepherd and a brown roan English springer spaniel chasing a squirrel or a duck. Press Space at the bottom of the page to play a chasing game."
       />
       {mode === "ambient" && (
-        <p className="text-center text-[11px] tracking-wider uppercase text-zinc-400 mt-1">
+        <p className="text-center text-[11px] tracking-wider uppercase text-zinc-400 pt-2">
           {isTouch ? "Tap the dogs to play" : "Press Space to play"}
         </p>
       )}

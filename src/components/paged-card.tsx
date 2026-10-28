@@ -15,7 +15,7 @@ const SWIPE_THRESHOLD = 50;
 
 /**
  * Rounded card that pages through content: header arrows, swipe on touch,
- * left/right keys, and dots. The body has a fixed height and scrolls if a
+ * two-finger swipe on a trackpad, click-and-drag with a mouse, left/right keys, and dots. The body has a fixed height and scrolls if a
  * page holds more than fits.
  */
 export function PagedCard({
@@ -34,6 +34,11 @@ export function PagedCard({
 }) {
   const [page, setPage] = useState(0);
   const start = useRef<{ x: number; y: number } | null>(null);
+  // Trackpad (horizontal wheel) swipes
+  const wheel = useRef({ accum: 0, lastAt: 0, lockedUntil: 0 });
+  // Mouse click-and-drag
+  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
 
   const last = pages.length - 1;
   const goTo = (p: number) => setPage(Math.min(last, Math.max(0, p)));
@@ -45,7 +50,7 @@ export function PagedCard({
 
   return (
     <div
-      className="rounded-2xl border border-zinc-200 bg-white/60 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600/40"
+      className="rounded-2xl border border-zinc-200 bg-white/60 overflow-hidden overscroll-x-contain focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600/40"
       role="region"
       aria-roledescription="carousel"
       aria-label={ariaLabel}
@@ -69,6 +74,60 @@ export function PagedCard({
         }
         start.current = null;
       }}
+      onWheel={(e) => {
+        // Two-finger sideways swipe on a trackpad (or shift+scroll on a mouse)
+        const dx = e.deltaX !== 0 ? e.deltaX : e.shiftKey ? e.deltaY : 0;
+        if (Math.abs(dx) <= Math.abs(e.shiftKey ? 0 : e.deltaY)) return;
+        const now = Date.now();
+        const w = wheel.current;
+        if (now < w.lockedUntil) return; // one page per gesture
+        if (now - w.lastAt > 200) w.accum = 0;
+        w.lastAt = now;
+        w.accum += dx;
+        if (Math.abs(w.accum) > 60) {
+          goTo(w.accum > 0 ? page + 1 : page - 1);
+          w.accum = 0;
+          w.lockedUntil = now + 650;
+        }
+      }}
+      onPointerDown={(e) => {
+        if (e.pointerType !== "mouse" || e.button !== 0) return;
+        drag.current = { x: e.clientX, y: e.clientY, moved: false };
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current;
+        if (!d) return;
+        if (!d.moved && Math.abs(e.clientX - d.x) > 8) {
+          d.moved = true;
+          window.getSelection()?.removeAllRanges();
+        }
+      }}
+      onPointerUp={(e) => {
+        const d = drag.current;
+        drag.current = null;
+        if (!d || !d.moved) return;
+        const dx = e.clientX - d.x;
+        const dy = e.clientY - d.y;
+        suppressClick.current = true; // a drag shouldn't also open a link
+        // Clear it right after this gesture's click (if any) so later clicks work normally
+        setTimeout(() => {
+          suppressClick.current = false;
+        }, 0);
+        if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+          goTo(dx < 0 ? page + 1 : page - 1);
+        }
+      }}
+      onPointerLeave={() => {
+        drag.current = null;
+      }}
+      onClickCapture={(e) => {
+        if (suppressClick.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          suppressClick.current = false;
+        }
+      }}
+      onDragStart={(e) => e.preventDefault()}
     >
       {pages.length > 1 ? (
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-200">

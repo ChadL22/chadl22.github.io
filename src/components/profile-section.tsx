@@ -80,15 +80,15 @@ export function ProfileSection({ aboutMe }: ProfileSectionProps) {
             rel="noopener noreferrer"
             className="group block mb-8 rounded-lg border border-zinc-200 bg-white/60 px-4 py-3 hover:border-amber-600 transition-colors duration-300"
           >
-            <span className="flex items-center gap-1.5 font-serif text-base text-zinc-900">
+            <span className="block text-sm text-zinc-900 font-medium leading-snug">
+              {aboutMe.createdProject.role}
+            </span>
+            <span className="flex items-center gap-1.5 text-sm text-zinc-600 leading-snug">
               {aboutMe.createdProject.name}
               <ArrowUpRight
-                size={14}
-                className="text-zinc-500 group-hover:text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"
+                size={13}
+                className="flex-shrink-0 text-zinc-500 group-hover:text-amber-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"
               />
-            </span>
-            <span className="block text-sm text-zinc-600 leading-snug mt-0.5">
-              {aboutMe.createdProject.tagline}
             </span>
           </a>
         )}

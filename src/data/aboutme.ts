@@ -16,7 +16,7 @@ export interface AboutMe {
   altName?: string;
   institutionUrl?: string;
   additionalRoles?: { title: string; institution: string; institutionUrl?: string }[];
-  createdProject?: { name: string; tagline: string; url: string };
+  createdProject?: { role: string; name: string; url: string };
 }
 
 export const aboutMe: AboutMe = {
@@ -35,8 +35,8 @@ export const aboutMe: AboutMe = {
   githubUsername: "ChadL22",
   twitterUsername: "sc_langa",
   createdProject: {
-    name: "Phronesis",
-    tagline: "A curated tech policy research library I created",
+    role: "Founder",
+    name: "Phronesis, The Tech Policy Library",
     url: "https://phronesisresearch.org",
   },
   //cvUrl: "https://",

@@ -8,7 +8,7 @@ export function PublicationEntry({
   publication: Publication;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-6">
+    <div className="flex flex-col sm:flex-row gap-6 px-5 py-4">
       {publication.imageUrl && (
         <div className="w-full sm:w-1/4 min-w-[160px] relative">
           <Image

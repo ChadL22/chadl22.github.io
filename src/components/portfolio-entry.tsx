@@ -4,7 +4,7 @@ import { Portfolio } from "@/data/portfolio";
 
 export function PortfolioEntry({ portfolio }: { portfolio: Portfolio }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-6">
+    <div className="flex flex-col sm:flex-row gap-6 px-5 py-4">
       {portfolio.imageUrl && (
         <div className="w-1/4 min-w-[160px] relative">
           <Image
@@ -17,7 +17,7 @@ export function PortfolioEntry({ portfolio }: { portfolio: Portfolio }) {
         </div>
       )}
       <div className="flex flex-col flex-1">
-        <h3 className="font-serif text-md mb-3">
+        <h3 className="font-serif text-base text-zinc-900 leading-snug mb-2">
           {portfolio.writtenUrl ? (
             <a
               href={portfolio.writtenUrl}
@@ -35,7 +35,7 @@ export function PortfolioEntry({ portfolio }: { portfolio: Portfolio }) {
         </h3>
 
         {portfolio.technologies && (
-          <div className="flex gap-2 mb-4 flex-wrap">
+          <div className="flex gap-2 mb-1 flex-wrap">
             {portfolio.technologies.map((tech, index) => (
               <span
                 key={index}
@@ -47,7 +47,7 @@ export function PortfolioEntry({ portfolio }: { portfolio: Portfolio }) {
           </div>
         )}
 
-        <div className="flex gap-6">
+        <div className="flex gap-6 empty:hidden mt-2">
           {portfolio.projectUrl && (
             <a
               href={portfolio.projectUrl}
@@ -73,7 +73,7 @@ export function PortfolioEntry({ portfolio }: { portfolio: Portfolio }) {
             </a>
           )}
         </div>
-        <p className="text-sm text-zinc-600 mb-4 mt-4 italic">
+        <p className="text-sm text-zinc-600 leading-relaxed mt-2">
           {portfolio.description}
         </p>
       </div>

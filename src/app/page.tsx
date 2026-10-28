@@ -10,119 +10,80 @@ import { ExperienceEntry } from "@/components/experience-entry";
 import { experienceData } from "@/data/experience";
 import { PortfolioEntry } from "@/components/portfolio-entry";
 import { portfolioData } from "@/data/portfolio";
+import { SectionCard } from "@/components/section-card";
 import { sectionOrder, Section } from "@/data/section-order";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#FFFCF8]">
-      {/* Don't have a great call on whether max-w-screen-xl is better */}
       <div className="max-w-screen-lg mx-auto px-8 py-24">
-        {/* Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
           {/* Left Column - Fixed Info */}
           <div className="col-span-12 md:col-span-4 space-y-12 mb-8 md:mb-0">
-            {/* Profile */}
             <div className="md:sticky top-12 space-y-8">
               <ProfileSection aboutMe={aboutMe} />
             </div>
           </div>
 
-          {/* Right Column - Scrolling Content */}
-          <div className="col-span-12 md:col-span-7 md:col-start-6 space-y-24">
-            {/* About section is typically first */}
+          {/* Right Column - Scrolling Content: every section shares one heading style and card */}
+          <div className="col-span-12 md:col-span-7 md:col-start-6 space-y-14">
             {aboutMe.description && (
-              <section>
-                <h2 className="font-serif text-l mb-4 tracking-wide uppercase">
-                  About Me
-                </h2>
+              <SectionCard id="about" title="About Me" boxed={false}>
                 <div
                   className="font-serif text-sm leading-relaxed text-zinc-700 space-y-4 [&_a]:underline [&_a]:text-zinc-900 [&_a:hover]:text-zinc-600"
                   dangerouslySetInnerHTML={{ __html: aboutMe.description }}
                 />
-              </section>
+              </SectionCard>
             )}
 
-            {/* Map through sectionOrder to render sections in correct order */}
             {sectionOrder.map((sectionName) => {
-              // Most of this is redundant... but in case it needs to be unique.
               switch (sectionName) {
                 case Section.News:
                   return (
                     newsData.length > 0 && (
-                      <section key={sectionName} id="news">
-                        <h2 className="font-serif text-l mb-12 tracking-wide uppercase">
-                          News
-                        </h2>
+                      <SectionCard key={sectionName} id="news" title="News" boxed={false}>
                         <NewsList items={newsData} />
-                      </section>
+                      </SectionCard>
                     )
                   );
                 case Section.Education:
                   return (
                     educationData.length > 0 && (
-                      <section key={sectionName} id="education">
-                        <h2 className="font-serif text-zinc-700 mb-12 tracking-wide uppercase">
-                          Education
-                        </h2>
-                        <div className="space-y-12">
-                          {educationData.map((education, index) => (
-                            <EducationEntry key={index} education={education} />
-                          ))}
-                        </div>
-                      </section>
+                      <SectionCard key={sectionName} id="education" title="Education">
+                        {educationData.map((education, index) => (
+                          <EducationEntry key={index} education={education} />
+                        ))}
+                      </SectionCard>
                     )
                   );
                 case Section.Publication:
                   return (
                     publicationData.length > 0 && (
-                      <section key={sectionName}>
-                        <h2 className="font-serif text-l mb-12 tracking-wide uppercase">
-                          Publications
-                        </h2>
-                        <div className="space-y-12">
-                          {publicationData.map((publication, index) => (
-                            <div key={index}>
-                              <PublicationEntry publication={publication} />
-                              {index < publicationData.length - 1 && (
-                                <div className="h-px bg-zinc-200 my-8" />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </section>
+                      <SectionCard key={sectionName} id="publications" title="Publications">
+                        {publicationData.map((publication, index) => (
+                          <PublicationEntry key={index} publication={publication} />
+                        ))}
+                      </SectionCard>
                     )
                   );
                 case Section.Experience:
                   return (
                     experienceData.length > 0 && (
-                      <section key={sectionName} id="experience">
-                        <h2 className="font-serif text-md mb-12 tracking-wide uppercase">
-                          Experience
-                        </h2>
-                        <div className="space-y-12">
-                          {experienceData.map((experience, index) => (
-                            <ExperienceEntry
-                              key={index}
-                              experience={experience}
-                            />
-                          ))}
-                        </div>
-                      </section>
+                      <SectionCard key={sectionName} id="experience" title="Experience">
+                        {experienceData.map((experience, index) => (
+                          <ExperienceEntry key={index} experience={experience} />
+                        ))}
+                      </SectionCard>
                     )
                   );
                 case Section.Portfolio:
                   return (
                     portfolioData.length > 0 && (
-                      <section key={sectionName} id="portfolio">
-                        <h2 className="font-serif text-md mb-12 tracking-wide uppercase">
-                          Portfolio
-                        </h2>
-                        <div className="space-y-12">
-                          {portfolioData.map((portfolio, index) => (
-                            <PortfolioEntry key={index} portfolio={portfolio} />
-                          ))}
-                        </div>
-                      </section>
+                      <SectionCard key={sectionName} id="portfolio" title="Portfolio">
+                        {portfolioData.map((portfolio, index) => (
+                          <PortfolioEntry key={index} portfolio={portfolio} />
+                        ))}
+                      </SectionCard>
                     )
                   );
                 default:

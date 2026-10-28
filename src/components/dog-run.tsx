@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 /**
  * A chocolate lab, a red merle Australian shepherd and a brown roan English
@@ -577,9 +578,9 @@ function makeObstacle(kind: ObKind, x: number): Obstacle {
 const SURFACE_Y = 30; // water surface (canvas y)
 const FLOOR_PAD = 14; // sand floor height at the bottom
 const WATER_STRETCH = 2600; // px swum before the sandbank appears
-const STROKE_V = -190; // one paddle stroke (px/s, upward)
-const SINK = 260; // px/s² drift down between strokes
-const MAX_SINK = 170;
+const STROKE_V = -150; // one paddle stroke (px/s, upward)
+const SINK = 300; // px/s² drift down between strokes
+const MAX_SINK = 190;
 
 interface WaterOb {
   kind: WaterKind;
@@ -1081,26 +1082,32 @@ export function DogRun() {
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
 
-    // Touch: tap to jump, swipe down to crawl
-    let downY: number | null = null;
+    // Touch / click: right half jumps (swims up); hold the left half to crouch (dive)
+    let crouchPointer: number | null = null;
     const onPointerDown = (e: PointerEvent) => {
-      downY = e.clientY;
-      if (g.mode === "ambient") startIntro();
-      else if (g.mode === "over") startGame((g.lead + 1) % 3);
-    };
-    const onPointerUp = (e: PointerEvent) => {
-      if (downY === null || g.mode !== "playing") return;
-      const dy = e.clientY - downY;
-      downY = null;
-      if (dy > 25) {
-        g.crawlUntil = clock + 0.8;
-        if (g.lift > 0) g.vy = Math.min(g.vy, -420);
+      if (g.mode === "ambient") return startIntro();
+      if (g.mode === "over") return startGame((g.lead + 1) % 3);
+      if (g.mode !== "playing") return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      if (e.clientX - rect.left < rect.width / 2) {
+        crouchPointer = e.pointerId;
+        g.crawlHeld = true;
+        if (g.lift > 0) g.vy = Math.min(g.vy, -420); // drop faster
       } else {
         jump();
       }
     };
+    const onPointerEnd = (e: PointerEvent) => {
+      if (e.pointerId === crouchPointer) {
+        crouchPointer = null;
+        g.crawlHeld = false;
+      }
+    };
     canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointerup", onPointerEnd);
+    canvas.addEventListener("pointercancel", onPointerEnd);
+    canvas.addEventListener("pointerleave", onPointerEnd);
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -1470,10 +1477,10 @@ export function DogRun() {
         ctx.fillText(
           water
             ? isTouchRef.current
-              ? "Underwater! Tap to swim up · swipe down to dive"
+              ? "Underwater! Tap right to swim up · hold left to dive"
               : "Underwater! Space or ↑ to swim up · ↓ to dive"
             : isTouchRef.current
-              ? "Tap to jump · swipe down to crawl"
+              ? "Tap right to jump · hold left to crouch"
               : "Space or ↑ to jump · ↓ to crawl · Esc to exit",
           w / 2,
           (water ? 48 : 40) / vs
@@ -1669,13 +1676,15 @@ export function DogRun() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointerup", onPointerEnd);
+      canvas.removeEventListener("pointercancel", onPointerEnd);
+      canvas.removeEventListener("pointerleave", onPointerEnd);
       io.disconnect();
     };
   }, []);
 
   return (
-    <div className="w-full">
+    <div className="relative w-full">
       <canvas
         ref={canvasRef}
         className={`block w-full select-none ${mode === "ambient" ? "touch-manipulation" : "touch-none"}`}
@@ -1684,6 +1693,17 @@ export function DogRun() {
         role="img"
         aria-label="A chocolate lab, a red merle Australian shepherd and a brown roan English springer spaniel chasing a squirrel or a duck. Press Space at the bottom of the page to play a chasing game."
       />
+      {isTouch && mode === "playing" && (
+        // Visual cues only: the whole left/right half of the game responds to touch
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-between p-2">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50 text-zinc-700 shadow-sm ring-1 ring-black/5">
+            <ChevronDown size={22} aria-hidden="true" />
+          </span>
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50 text-zinc-700 shadow-sm ring-1 ring-black/5">
+            <ChevronUp size={22} aria-hidden="true" />
+          </span>
+        </div>
+      )}
       {mode === "ambient" && (
         <p className="text-center text-[11px] tracking-wider uppercase text-zinc-400 pt-2">
           {isTouch ? "Tap the dogs to play" : "Press Space to play"}

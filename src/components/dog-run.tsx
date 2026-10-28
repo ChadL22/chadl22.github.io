@@ -349,20 +349,28 @@ function drawDog(
   ctx.restore();
 }
 
-/** A tennis ball; y is its bottom. */
+/** A bright orange fetch ball with blue seam bands; y is its bottom. */
 function drawBall(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
-  ellipse(ctx, x, y - 4, 4, 4, "#D4E04A");
+  const r = 5;
   ctx.save();
-  ctx.translate(x, y - 4);
-  ctx.rotate(t * 8);
-  ctx.strokeStyle = "#F8F8F0";
-  ctx.lineWidth = 0.9;
+  ctx.translate(x, y - r);
+  ellipse(ctx, 0, 0, r, r, "#F47B20");
   ctx.beginPath();
-  ctx.arc(-4.5, 0, 3.6, -0.9, 0.9);
-  ctx.moveTo(4.5 - 3.6 * Math.cos(0.9), -3.6 * Math.sin(0.9));
-  ctx.arc(4.5, 0, 3.6, Math.PI - 0.9, Math.PI + 0.9, true);
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.rotate(t * 8);
+  // Two thick blue seam bands curving across the ball
+  ctx.strokeStyle = "#1F5FAD";
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(-r * 1.25, 0, r * 0.95, -1.0, 1.0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(r * 1.25, 0, r * 0.95, Math.PI - 1.0, Math.PI + 1.0);
   ctx.stroke();
   ctx.restore();
+  // Shine
+  ellipse(ctx, x - 1.6, y - r - 1.8, 1.4, 1, "rgba(255, 255, 255, 0.45)");
 }
 
 /** A fleeing squirrel or duck, facing its direction of travel. */
@@ -838,7 +846,7 @@ export function DogRun() {
       const u = t * 70;
       const pack = bounce(u, travel);
 
-      // A tennis ball bounces 80px ahead along the same back-and-forth path, so
+      // The fetch ball bounces 80px ahead along the same back-and-forth path, so
       // it turns first and the pack follows it around.
       const ball = bounce(u + 80, travel);
       const ballX = margin + ball.pos;

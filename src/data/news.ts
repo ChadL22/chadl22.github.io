@@ -18,12 +18,6 @@ export const newsData: News[] = [
     description: "Attending the Emerging Tech For Social Good Summit to explore how emerging technologies can be leveraged to address social challenges and create positive impact.",
     link: "https://luma.com/CLTSG",
   },
-  {
-    date: "2026",
-    title: "Launching Phronesis",
-    description: "Excited to announce the launch of Phronesis, a public-facing library of resources at the intersection of technology, policy, and law. Explore it at PhronesisResearch.org.",
-    link: "https://phronesisresearch.org",
-  },
    {
     date: "2025",
     title: "ISI Honors Conference",

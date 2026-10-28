@@ -10,22 +10,17 @@ export interface Portfolio {
 
 export const portfolioData: Portfolio[] = [
   {
-    title: "Misinformation, Philosophy, and Classification on X (Formerly Twitter)",
+    title: "A New Fairness Doctrine or Something Else?",
     description:
-      "An interactive notebook exploring the societal problem of misinformation through the lenses of philosophy, mathematics, and societal systems. This project proposes interdisciplinary approaches to improve online communities using classification techniques.",
-    technologies: ["Python", "Colab", "Classification Theory"],
-    writtenUrl: "https://docs.google.com/document/d/1_WIlHyZYe5LQ7pLxFgsb5EO4yNJXlxFb/edit?usp=sharing&ouid=113622749755892142878&rtpof=true&sd=true",
-    codeUrl: "https://colab.research.google.com/drive/1kyAcuL7FNCDhKT3SIKDiXYrnuKTe650v?usp=sharing",
-    //imageUrl: "/images/misinformation.jpg",
+      "A policy essay tracing debates over the public's access to information from the FCC's Fairness Doctrine to today's algorithmically curated platforms and AI systems. It weighs paths forward, from a modernized fairness obligation to public-interest duties around recommender design and amplification, and argues the country must decide how it governs access to information in an algorithmic age.",
+    technologies: ["First Amendment", "Platform Governance", "Information Policy"],
+    writtenUrl: "/papers/fairness-doctrine.pdf",
   },
   {
-    title: "Breaking Patterns: Exploring Diversity in Music Recommendations",
+    title: "Location Technology and the U.S. Fourth Amendment",
     description:
-      "A Google Colab notebook proposing an algorithmic framework inspired by Szemerédi's Theorem to break repetitive patterns in music recommendations. This project aims to enhance diversity and serendipity while maintaining user satisfaction on Digital Streaming Platforms. This work is now being contributed to Parachord as a plugin.",
-    technologies: ["Python", "Colab", "Szemerédi's Theorem"],
-    writtenUrl: "https://docs.google.com/document/d/1JYxX8S7rYhQdkiPSjmJgTpt8XGWvG4JPoeDBlgCPREU/edit?usp=sharing",
-    projectUrl: "https://parachord.com/",
-    codeUrl: "https://colab.research.google.com/drive/1RjVy8d1PUhN25oEpLf3F4rjkP7cWFZBX?usp=sharing",
-    //imageUrl: "/images/music_recommendations.jpg",
+      "A research poster asking how the Supreme Court's reasoning in Chatrie v. United States, which found that obtaining Google Location History through a geofence warrant crossed a constitutional line, extends to other mobile services. It codes the majority, concurrences, and dissents, classifies location data by source, precision, retention, and user involvement, and assesses whether data from ride-sharing apps, social media, streaming platforms, and LLM chats is covered, excluded, or unresolved.",
+    technologies: ["Fourth Amendment", "Location Data", "Privacy Law"],
+    writtenUrl: "/papers/location-tech-fourth-amendment.pdf",
   },
 ];

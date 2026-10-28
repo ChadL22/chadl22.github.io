@@ -78,16 +78,22 @@ export function NewsList({ items }: { items: News[] }) {
   return (
     <div>
       {groups.map((group, i) => (
-        <div
-          key={`${group.year}-${i}`}
-          className="grid grid-cols-[4.5rem_1fr] gap-4 py-4 border-t border-zinc-200 first:border-t-0 first:pt-0"
-        >
-          <p className="text-xs text-zinc-500 pt-2.5 tracking-wide">{group.year}</p>
-          <ul>
-            {group.items.map((news, j) => (
-              <NewsRow key={j} news={news} />
-            ))}
-          </ul>
+        <div key={`${group.year}-${i}`}>
+          {i > 0 && (
+            <div className="grid grid-cols-[4.5rem_1fr] gap-4" aria-hidden="true">
+              <div />
+              {/* Divider spans the titles only: not under the year or the More buttons */}
+              <div className="h-px bg-zinc-200 my-4 mr-20" />
+            </div>
+          )}
+          <div className="grid grid-cols-[4.5rem_1fr] gap-4">
+            <p className="text-xs text-zinc-500 pt-2.5 tracking-wide">{group.year}</p>
+            <ul>
+              {group.items.map((news, j) => (
+                <NewsRow key={j} news={news} />
+              ))}
+            </ul>
+          </div>
         </div>
       ))}
       {hiddenCount > 0 && (

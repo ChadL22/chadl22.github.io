@@ -16,6 +16,7 @@ export interface AboutMe {
   altName?: string;
   institutionUrl?: string;
   additionalRoles?: { title: string; institution: string; institutionUrl?: string }[];
+  createdProject?: { name: string; tagline: string; url: string };
 }
 
 export const aboutMe: AboutMe = {
@@ -24,8 +25,8 @@ export const aboutMe: AboutMe = {
   institution: "SAS Institute",
   // Note that links work in the description
   description: `
-    <p>Professionally, I am a Research Software Engineer whose work centers on Causal AI, an area of AI research that aims to equip machines with the ability to discern causal relationships, reason over counterfactual alternatives, and produce predictions. In addition to my day job, I engage in policy analysis related to technology governance as Co-Lead of the <a href="https://techpolicyhub.org/" target="_blank" rel="noopener noreferrer">University of Maryland Tech Policy Hub</a>. While separate from my formal role, this work informs how I approach the design and evaluation of systems operating within institutional constraints.</p>
-    <p>This perspective carries into my research on the design and governance of institutions and sociotechnical systems. I draw primarily on microeconomic theory and public policy, with mechanism design guiding my analysis of incentives, rules, and information structures, while borrowing methods from ethics, law, mathematics, and computer science.</p>
+    <p>Professionally, I am a Research Software Engineer working in Causal AI, an area of artificial intelligence concerned with modeling cause-and-effect relationships to support reasoning and inference beyond statistical correlation. Alongside my engineering work, I serve as Co-Lead of the <a href="https://techpolicyhub.org/" target="_blank" rel="noopener noreferrer">University of Maryland Tech Policy Hub</a>, where I contribute to research and policy analysis on technology governance.</p>
+    <p>More specifically, my research interests sit at the intersection of technology, policy, and law. Drawing on mechanism design, I examine the relationships between emerging technologies, consumer welfare, market competition, and individual rights. I am particularly interested in how existing legal and institutional frameworks apply to emerging technologies, where they fall short, and how they might evolve.</p>
   `,
   email: "sclanga [at] proton [dot] me",
   imageUrl:
@@ -33,7 +34,11 @@ export const aboutMe: AboutMe = {
   //googleScholarUrl: "https://scholar.google.com/citations?user=bWtMl_MAAAAJ",
   githubUsername: "ChadL22",
   twitterUsername: "sc_langa",
-  blogUrl: "https://phronesisresearch.org",
+  createdProject: {
+    name: "Phronesis",
+    tagline: "A curated tech policy research library I created",
+    url: "https://phronesisresearch.org",
+  },
   //cvUrl: "https://",
   institutionUrl: "https://www.sas.com/",
   additionalRoles: [

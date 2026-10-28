@@ -21,15 +21,123 @@ type Quarry = "squirrel" | "duck";
 type ObKind = "bush" | "hydrant" | "fence" | "tire" | "hole";
 
 const BREEDS: Breed[] = ["lab", "aussie", "springer"];
-const BREED_NAMES: Record<Breed, string> = {
-  lab: "Chocolate Lab",
-  aussie: "Australian Shepherd",
-  springer: "English Springer Spaniel",
-};
+const SHORT_NAMES: Record<Breed, string> = { lab: "Lab", aussie: "Aussie", springer: "Springer" };
+const QUARRY_NAMES: Record<Quarry, string> = { squirrel: "Squirrel", duck: "Duck" };
+
+/** Deterministic 0..1 noise so scenery looks random but never flickers. */
+function hash(n: number) {
+  const s = Math.sin(n * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+/**
+ * Park scenery behind the game: sky, clouds, hills, a tree line and a grassy
+ * field. Each layer scrolls at its own rate (parallax) as the dog runs.
+ */
+function drawScenery(ctx: CanvasRenderingContext2D, w: number, h: number, gy: number, scroll: number) {
+  // Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, gy);
+  sky.addColorStop(0, "#CFE4F2");
+  sky.addColorStop(1, "#EEF5E8");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, gy);
+
+  // Soft sun
+  ellipse(ctx, w - 70, 34, 13, 13, "rgba(255, 236, 179, 0.9)");
+
+  // Clouds (very slow)
+  const cloudSpan = 260;
+  const cOff = (scroll * 0.06) % cloudSpan;
+  const cStart = Math.floor((scroll * 0.06) / cloudSpan);
+  for (let i = -1; i <= Math.ceil(w / cloudSpan) + 1; i++) {
+    const n = cStart + i;
+    const cx = i * cloudSpan - cOff + hash(n) * 120;
+    const cy = 26 + hash(n + 7) * 26;
+    const s = 0.7 + hash(n + 3) * 0.6;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 16 * s, 6 * s, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + 10 * s, cy - 4 * s, 10 * s, 6 * s, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx - 9 * s, cy - 2 * s, 8 * s, 5 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Distant hills
+  const hillShift = scroll * 0.15;
+  ctx.fillStyle = "#BCD5AE";
+  ctx.beginPath();
+  ctx.moveTo(0, gy);
+  for (let x = 0; x <= w + 8; x += 8) {
+    const X = x + hillShift;
+    ctx.lineTo(x, gy - 34 - 12 * Math.sin(X / 95) - 7 * Math.sin(X / 41 + 1.3));
+  }
+  ctx.lineTo(w, gy);
+  ctx.closePath();
+  ctx.fill();
+
+  // Far meadow and tree line, set back from the trail: smaller and paler for depth
+  const horizon = gy - 12;
+  ctx.fillStyle = "#A9CC8E";
+  ctx.fillRect(0, horizon, w, gy - horizon);
+  const treeSpan = 38;
+  const tShift = scroll * 0.35;
+  const tOff = tShift % treeSpan;
+  const tStart = Math.floor(tShift / treeSpan);
+  for (let i = -1; i <= Math.ceil(w / treeSpan) + 1; i++) {
+    const n = tStart + i;
+    if (hash(n + 11) < 0.3) continue; // gaps between trees
+    const tx = i * treeSpan - tOff + hash(n) * 18;
+    const th = 8 + hash(n + 5) * 10;
+    const r = 6 + hash(n + 9) * 5;
+    const base = horizon + 2;
+    ctx.fillStyle = "#9C8670";
+    ctx.fillRect(tx - 1, base - th, 2, th);
+    const shade = hash(n + 2) < 0.5 ? "#9DBF86" : "#8EB378";
+    ellipse(ctx, tx, base - th - r * 0.6, r, r * 1.1, shade);
+    ellipse(ctx, tx - r * 0.35, base - th - r * 0.9, r * 0.45, r * 0.4, "rgba(255,255,255,0.15)");
+  }
+
+  // Dirt trail the dogs run along, then the grass in front of it
+  ctx.fillStyle = "#D2BE93";
+  ctx.fillRect(0, gy - 3, w, 10);
+  ctx.fillStyle = "#C4AE80";
+  ctx.fillRect(0, gy + 6, w, 1);
+  ctx.fillStyle = "#8DBF6A";
+  ctx.fillRect(0, gy + 7, w, h - gy - 7);
+  // Pebbles on the trail
+  const pebSpan = 31;
+  const pOff = scroll % pebSpan;
+  const pStart = Math.floor(scroll / pebSpan);
+  for (let i = -1; i <= Math.ceil(w / pebSpan) + 1; i++) {
+    const n = pStart + i + 500;
+    ellipse(ctx, i * pebSpan - pOff + hash(n) * 20, gy + 1 + hash(n + 1) * 4, 1.2, 0.8, "#B39C6E");
+  }
+
+  // Grass tufts moving at ground speed
+  const tuftSpan = 23;
+  const gOff = scroll % tuftSpan;
+  const gStart = Math.floor(scroll / tuftSpan);
+  ctx.strokeStyle = "#6FA24E";
+  ctx.lineWidth = 1.2;
+  ctx.lineCap = "round";
+  for (let i = -1; i <= Math.ceil(w / tuftSpan) + 1; i++) {
+    const n = gStart + i;
+    const x = i * tuftSpan - gOff + hash(n) * 12;
+    const y = gy + 10 + hash(n + 4) * (h - gy - 12);
+    ctx.beginPath();
+    ctx.moveTo(x - 2, y + 2);
+    ctx.lineTo(x - 3, y - 1);
+    ctx.moveTo(x, y + 2);
+    ctx.lineTo(x, y - 2);
+    ctx.moveTo(x + 2, y + 2);
+    ctx.lineTo(x + 3, y - 1);
+    ctx.stroke();
+  }
+}
 
 const AMBIENT_H = 64;
-const GAME_H = 160;
-const GROUND_PAD = 12; // ground line distance from canvas bottom (game)
+const GAME_H = 172;
+const GROUND_PAD = 22; // depth of the grass strip under the running line (game)
 const GRAVITY = 1800; // px/s²
 const JUMP_V = 560; // px/s → ~87px jump
 const START_SPEED = 320; // px/s
@@ -335,7 +443,12 @@ function drawObstacle(ctx: CanvasRenderingContext2D, o: Obstacle, gy: number) {
       break;
     }
     case "fence": {
-      ctx.fillStyle = "#D9C7A8";
+      // White picket fence
+      ctx.fillStyle = "#E9E2D3";
+      ctx.fillRect(x, gy - o.h + 8, o.w, 3);
+      ctx.fillRect(x, gy - 9, o.w, 3);
+      ctx.strokeStyle = "#A8977A";
+      ctx.lineWidth = 0.8;
       for (let i = 0; i < 3; i++) {
         const px = x + 2 + i * 10;
         ctx.beginPath();
@@ -345,11 +458,10 @@ function drawObstacle(ctx: CanvasRenderingContext2D, o: Obstacle, gy: number) {
         ctx.lineTo(px + 6, gy - o.h + 4);
         ctx.lineTo(px + 6, gy);
         ctx.closePath();
+        ctx.fillStyle = "#FBF8F1";
         ctx.fill();
+        ctx.stroke();
       }
-      ctx.fillStyle = "#C2AD8A";
-      ctx.fillRect(x, gy - o.h + 8, o.w, 3);
-      ctx.fillRect(x, gy - 9, o.w, 3);
       break;
     }
     case "tire": {
@@ -430,6 +542,7 @@ interface Game {
   quarry: Quarry;
   quarryX: number;
   hintUntil: number;
+  scroll: number; // distance run, drives the parallax scenery
 }
 
 function readBest(): number {
@@ -480,6 +593,7 @@ export function DogRun() {
     quarry: "squirrel",
     quarryX: 0,
     hintUntil: 0,
+    scroll: 0,
   });
 
   useEffect(() => {
@@ -526,6 +640,7 @@ export function DogRun() {
       g.quarry = Math.random() < 0.5 ? "squirrel" : "duck";
       g.quarryX = LEAD_X + 110;
       g.hintUntil = clock + 2.6;
+      g.scroll = 0;
       setGameMode("playing");
       requestAnimationFrame(() =>
         window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" })
@@ -693,6 +808,7 @@ export function DogRun() {
 
       g.speed = Math.min(MAX_SPEED, g.speed + 8 * dt);
       g.score += (g.speed * dt) / 10;
+      g.scroll += g.speed * dt;
       g.quarryX = LEAD_X + 110 + 8 * Math.sin(clock * 1.3);
 
       const dogCenter = LEAD_X + 4;
@@ -747,7 +863,7 @@ export function DogRun() {
 
     const drawGame = (w: number, h: number) => {
       const gy = h - GROUND_PAD;
-      ground(w, gy, "#D4D4D8");
+      drawScenery(ctx, w, h, gy, g.scroll);
 
       for (const o of g.obstacles) drawObstacle(ctx, o, gy);
 
@@ -777,20 +893,21 @@ export function DogRun() {
 
       // HUD
       ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
-      ctx.fillStyle = "#71717A";
+      ctx.fillStyle = "#3F3F46";
       ctx.textAlign = "right";
       const pad = (n: number) => String(n).padStart(5, "0");
       ctx.fillText(`HI ${pad(g.best)}  ${pad(Math.floor(g.score))}`, w - 12, 16);
       ctx.textAlign = "left";
-      ctx.fillText(`${BREED_NAMES[breed]} vs. the ${g.quarry}`, 12, 16);
+      ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
+      ctx.fillText(`${SHORT_NAMES[breed]} & ${QUARRY_NAMES[g.quarry]}`, 12, 16);
 
       ctx.textAlign = "center";
       ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
       if (g.mode === "over") {
-        ctx.fillStyle = "#3F3F46";
+        ctx.fillStyle = "#27272A";
         ctx.font = "13px ui-sans-serif, system-ui, sans-serif";
         ctx.fillText(`The ${g.quarry} got away!`, w / 2, 40);
-        ctx.fillStyle = "#71717A";
+        ctx.fillStyle = "#52525B";
         ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
         ctx.fillText(
           isTouchRef.current
@@ -800,7 +917,7 @@ export function DogRun() {
           58
         );
       } else if (clock < g.hintUntil) {
-        ctx.fillStyle = "#71717A";
+        ctx.fillStyle = "#52525B";
         ctx.fillText(
           isTouchRef.current
             ? "Tap to jump · swipe down to crawl"
@@ -844,7 +961,7 @@ export function DogRun() {
     <div className="w-full">
       <canvas
         ref={canvasRef}
-        className={`block w-full select-none ${mode === "ambient" ? "touch-manipulation" : "touch-none"}`}
+        className={`block w-full select-none ${mode === "ambient" ? "touch-manipulation" : "touch-none rounded-xl"}`}
         style={{ height: mode === "ambient" ? AMBIENT_H : GAME_H }}
         role="img"
         aria-label="A chocolate lab, a red merle Australian shepherd and a brown roan English springer spaniel chasing a squirrel or a duck. Press Space at the bottom of the page to play a chasing game."

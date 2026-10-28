@@ -42,43 +42,37 @@ export function ProfileSection({ aboutMe }: ProfileSectionProps) {
             {aboutMe.altName}
           </p>
         )}
-        <p className="text-zinc-600 text-xs leading-relaxed tracking-wide uppercase mb-6">
-          {aboutMe.title}
-          <br />
-          {aboutMe.institutionUrl ? (
-            <a
-              href={aboutMe.institutionUrl}
-              className="hover:text-zinc-900 transition-colors duration-300"
-              target="_blank"
-              rel="noopener noreferrer"
+        <ul className="space-y-4 mb-8" aria-label="Current roles">
+          {[
+            {
+              title: aboutMe.title,
+              institution: aboutMe.institution,
+              institutionUrl: aboutMe.institutionUrl,
+            },
+            ...(aboutMe.additionalRoles ?? []),
+          ].map((role, index) => (
+            <li
+              key={index}
+              className="border-l-2 border-amber-600 pl-3 text-sm leading-snug"
             >
-              {aboutMe.institution}
-            </a>
-          ) : (
-            aboutMe.institution
-          )}
-        </p>
-        {aboutMe.additionalRoles?.map((role, index) => (
-          <p
-            key={index}
-            className="text-zinc-600 text-xs leading-relaxed tracking-wide uppercase mb-6"
-          >
-            {role.title}
-            <br />
-            {role.institutionUrl ? (
-              <a
-                href={role.institutionUrl}
-                className="hover:text-zinc-900 transition-colors duration-300"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {role.institution}
-              </a>
-            ) : (
-              role.institution
-            )}
-          </p>
-        ))}
+              <p className="text-zinc-900 font-medium">{role.title}</p>
+              <p className="text-zinc-600">
+                {role.institutionUrl ? (
+                  <a
+                    href={role.institutionUrl}
+                    className="hover:text-zinc-900 transition-colors duration-300"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {role.institution}
+                  </a>
+                ) : (
+                  role.institution
+                )}
+              </p>
+            </li>
+          ))}
+        </ul>
         <div className="flex gap-6 mb-6">
           {aboutMe.blogUrl && (
             <a

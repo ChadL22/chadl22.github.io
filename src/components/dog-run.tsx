@@ -3,17 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * A chocolate lab, an Australian shepherd and an English springer spaniel
- * chasing each other back and forth along the bottom of the page. The pack
- * keeps overtaking itself, so the dog in front rotates.
+ * A chocolate lab, a red merle Australian shepherd and a brown roan English
+ * springer spaniel chase a squirrel or a duck back and forth along the bottom
+ * of the page. The pack keeps overtaking itself, so the dog in front rotates.
  *
- * At the bottom of the page, Space (or a tap on touch screens) starts a
- * runner game in the spirit of Chrome's T-rex game: Space jumps, Esc exits.
- * The lead dog rotates each round; the other two follow and jump on their own.
+ * At the bottom of the page, Space (or a tap) starts a runner game. Whichever
+ * dog is in front at that moment does the chasing, alone. Jump the bushes,
+ * hydrants and fences, dive through the tire, and crawl under the fence hole.
+ * When the chaser fails, it looks sad, the quarry escapes, and the other two
+ * dogs run up to play with it.
  */
 
 type Breed = "lab" | "aussie" | "springer";
 type Mode = "ambient" | "playing" | "over";
+type Pose = "run" | "air" | "crawl" | "sad" | "stand";
+type Quarry = "squirrel" | "duck";
+type ObKind = "bush" | "hydrant" | "fence" | "tire" | "hole";
 
 const BREEDS: Breed[] = ["lab", "aussie", "springer"];
 const BREED_NAMES: Record<Breed, string> = {
@@ -23,32 +28,59 @@ const BREED_NAMES: Record<Breed, string> = {
 };
 
 const AMBIENT_H = 64;
-const GAME_H = 150;
+const GAME_H = 160;
+const GROUND_PAD = 12; // ground line distance from canvas bottom (game)
 const GRAVITY = 1800; // px/s²
-const JUMP_V = 560; // px/s
-const START_SPEED = 330; // px/s
-const MAX_SPEED = 760;
+const JUMP_V = 560; // px/s → ~87px jump
+const START_SPEED = 320; // px/s
+const MAX_SPEED = 720;
+const LEAD_X = 140;
 const BEST_KEY = "dogrun-best";
+
+// Tire geometry (heights above the ground)
+const TIRE_STAND_H = 46;
+const TIRE_CENTER = 80;
+const TIRE_INNER_LO = 56;
+const TIRE_INNER_HI = 104;
+// Fence-hole geometry: wall from HOLE_GAP up to HOLE_TOP; crawl through the gap
+const HOLE_GAP = 22;
+const HOLE_TOP = 128;
 
 interface Palette {
   body: string;
-  dark: string;
+  patch: string; // merle/liver patches
   leg: string;
   legFar: string;
-  outline?: string;
+  white?: string;
+  eye: string;
 }
 
 const PAL: Record<Breed, Palette> = {
-  lab: { body: "#5C3A21", dark: "#432914", leg: "#5C3A21", legFar: "#3E2614" },
-  aussie: { body: "#8E949C", dark: "#2B2B2E", leg: "#B4652E", legFar: "#8C4C22" },
+  lab: { body: "#5C3A21", patch: "#432914", leg: "#5C3A21", legFar: "#3E2614", eye: "#F8F4EC" },
+  // Red merle: light red base with liver-red patches, copper points, white trim, blue eye
+  aussie: {
+    body: "#D4A88C",
+    patch: "#8A3B1F",
+    leg: "#C77B45",
+    legFar: "#9E5B2E",
+    white: "#F6F1EA",
+    eye: "#5B8DB8",
+  },
+  // Brown roan: white heavily ticked with brown, liver patches
   springer: {
-    body: "#F1EBE1",
-    dark: "#6B3A22",
-    leg: "#E7DFD2",
-    legFar: "#CFC5B6",
-    outline: "#C9BBA8",
+    body: "#BFA898",
+    patch: "#5E3220",
+    leg: "#C9B4A4",
+    legFar: "#A8917F",
+    eye: "#F8F4EC",
   },
 };
+
+// Fixed ticking positions for the roan coat
+const ROAN_TICKS: [number, number][] = [
+  [-12, -15], [-8, -13], [-4, -14], [0, -12], [4, -13], [8, -15], [11, -18],
+  [-13, -19], [-9, -17], [6, -19], [9, -21], [2, -16], [-5, -17], [12, -14],
+];
 
 function ellipse(
   ctx: CanvasRenderingContext2D,
@@ -65,7 +97,7 @@ function ellipse(
   ctx.fill();
 }
 
-/** Draws one dog facing right (or left when facing = -1) with its feet on groundY. */
+/** One dog, facing right (facing = -1 mirrors it), feet on groundY. */
 function drawDog(
   ctx: CanvasRenderingContext2D,
   breed: Breed,
@@ -74,18 +106,30 @@ function drawDog(
   facing: 1 | -1,
   phase: number,
   lift: number,
-  airborne: boolean
+  pose: Pose = "run"
 ) {
   const p = PAL[breed];
   ctx.save();
   ctx.translate(x, groundY - lift);
   ctx.scale(facing, 1);
+  if (pose === "crawl") ctx.scale(1.1, 0.55);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
+  const still = pose === "sad" || pose === "stand";
   const leg = (hipX: number, offset: number, color: string) => {
-    const a = airborne ? (hipX > 0 ? 0.9 : -0.9) : Math.sin(phase + offset);
-    const raise = airborne ? 3 : Math.max(0, Math.cos(phase + offset)) * 4;
+    let a: number;
+    let raise: number;
+    if (pose === "air") {
+      a = hipX > 0 ? 0.95 : -0.95;
+      raise = 3;
+    } else if (still) {
+      a = offset > 0.3 ? 0.2 : -0.1;
+      raise = 0;
+    } else {
+      a = Math.sin(phase + offset);
+      raise = Math.max(0, Math.cos(phase + offset)) * 4;
+    }
     ctx.strokeStyle = color;
     ctx.lineWidth = 3.4;
     ctx.beginPath();
@@ -94,36 +138,52 @@ function drawDog(
     ctx.stroke();
   };
 
-  // Far legs (behind the body)
+  // Far legs
   leg(-9, 0.6, p.legFar);
   leg(9, Math.PI + 0.6, p.legFar);
 
   // Tail
-  const wag = Math.sin(phase * 0.8) * 2;
+  const wag = pose === "stand" ? Math.sin(phase * 3) * 4 : Math.sin(phase * 0.8) * 2;
+  const droop = pose === "sad";
   ctx.beginPath();
-  if (breed === "lab") {
-    ctx.strokeStyle = p.body;
+  if (breed === "aussie") {
+    ctx.strokeStyle = p.patch;
     ctx.lineWidth = 4;
-    ctx.moveTo(-14, -20);
-    ctx.quadraticCurveTo(-21, -22 + wag, -25, -17 + wag);
-  } else if (breed === "springer") {
-    ctx.strokeStyle = p.dark;
-    ctx.lineWidth = 3;
     ctx.moveTo(-14, -21);
-    ctx.quadraticCurveTo(-20, -26 + wag, -24, -24 + wag);
+    ctx.lineTo(-17, droop ? -18 : -23);
   } else {
-    // Aussie bobtail
-    ctx.strokeStyle = p.dark;
-    ctx.lineWidth = 4;
-    ctx.moveTo(-14, -21);
-    ctx.lineTo(-17, -23);
+    ctx.strokeStyle = breed === "springer" ? p.patch : p.body;
+    ctx.lineWidth = breed === "lab" ? 4 : 3;
+    ctx.moveTo(-14, -20);
+    if (droop) ctx.quadraticCurveTo(-20, -16, -21, -9);
+    else if (breed === "lab") ctx.quadraticCurveTo(-21, -22 + wag, -25, -17 + wag);
+    else ctx.quadraticCurveTo(-20, -26 + wag, -24, -24 + wag);
   }
   ctx.stroke();
 
-  // Body, neck, head, snout
+  // Body
+  ellipse(ctx, 0, -18, 15, 7, p.body);
+
+  // Body markings
+  if (breed === "aussie") {
+    ellipse(ctx, -6, -21, 4.5, 2.6, p.patch);
+    ellipse(ctx, 3, -16, 3, 2, p.patch);
+    ellipse(ctx, -11, -17, 2.6, 2, p.patch);
+    ellipse(ctx, 12, -15, 4, 5, p.white!);
+  } else if (breed === "springer") {
+    for (const [tx, ty] of ROAN_TICKS) ellipse(ctx, tx, ty, 0.9, 0.9, "#7A4A30");
+    ellipse(ctx, -3, -21, 10, 4.6, p.patch);
+  }
+
+  // Head group (neck, head, snout, ear, face) — tilts down when sad
+  ctx.save();
+  if (droop) {
+    ctx.translate(11, -20);
+    ctx.rotate(0.85); // head hangs low
+    ctx.translate(-11, 20);
+  }
   ctx.fillStyle = p.body;
   ctx.beginPath();
-  ctx.ellipse(0, -18, 15, 7, 0, 0, Math.PI * 2);
   ctx.moveTo(9, -22);
   ctx.lineTo(14, -31);
   ctx.lineTo(20, -26);
@@ -135,96 +195,240 @@ function drawDog(
   ctx.fill();
   ellipse(ctx, 23, -26, 5, 3, p.body);
 
-  if (p.outline) {
-    ctx.strokeStyle = p.outline;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.ellipse(0, -18, 15, 7, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  // Breed markings and ears
   if (breed === "lab") {
-    ellipse(ctx, 14, -26, 2.6, 4.6, p.dark, 0.3);
+    ellipse(ctx, 14, -26, 2.6, 4.6, p.patch, droop ? 0 : 0.3);
   } else if (breed === "aussie") {
-    // Blue merle patches, white chest and blaze, copper cheek, folded ear
-    ellipse(ctx, -6, -21, 4, 2.5, p.dark);
-    ellipse(ctx, 3, -16, 3, 2, p.dark);
-    ellipse(ctx, -11, -17, 2.5, 2, p.dark);
-    ellipse(ctx, 15, -31, 2.5, 2, p.dark);
-    ellipse(ctx, 12, -15, 4, 5, "#F4F1EC");
-    ellipse(ctx, 23, -25, 4, 2, "#F4F1EC");
-    ellipse(ctx, 19, -25, 2, 1.5, "#B4652E");
-    ctx.fillStyle = p.dark;
+    ellipse(ctx, 16, -31, 3, 2.2, p.patch);
+    ellipse(ctx, 23, -25, 4, 2, p.white!);
+    ellipse(ctx, 19, -25, 2, 1.5, "#C77B45");
+    ctx.fillStyle = p.patch;
     ctx.beginPath();
-    ctx.moveTo(13, -32);
-    ctx.lineTo(16, -37);
-    ctx.lineTo(18, -32);
+    if (droop) {
+      ctx.moveTo(13, -31);
+      ctx.lineTo(11, -26);
+      ctx.lineTo(16, -30);
+    } else {
+      ctx.moveTo(13, -32);
+      ctx.lineTo(16, -37);
+      ctx.lineTo(18, -32);
+    }
     ctx.closePath();
     ctx.fill();
   } else {
-    // Springer: liver saddle and head, long feathered ear
-    ellipse(ctx, -3, -21, 10, 5, p.dark);
-    ellipse(ctx, 16, -30, 5, 4, p.dark);
-    ellipse(ctx, 13, -24, 3, 6.5, p.dark, 0.2);
+    ellipse(ctx, 16, -30, 5, 4, p.patch);
+    ellipse(ctx, 13, -24, 3, 6.5, p.patch, 0.2);
   }
+
+  // Eye: closed and teary when sad
+  if (droop) {
+    // Closed eye (light on dark faces so it shows) and a tear
+    ctx.strokeStyle = breed === "aussie" ? "#1A1A1A" : "#F8F4EC";
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.arc(19, -29.5, 1.6, 0.15, Math.PI - 0.15);
+    ctx.stroke();
+    ellipse(ctx, 20.5, -25.8, 1, 1.6, "#7FB3D5");
+  } else {
+    ellipse(ctx, 19, -29, 1.15, 1.15, p.eye);
+  }
+  ellipse(ctx, 27.5, -26.5, 1.6, 1.6, "#1A1A1A");
+  ctx.restore();
 
   // Near legs
   leg(-9, 0, p.leg);
   leg(9, Math.PI, p.leg);
 
-  // Eye and nose
-  ellipse(ctx, 19, -29, 1.1, 1.1, breed === "aussie" ? "#111" : "#F8F4EC");
-  ellipse(ctx, 27.5, -26.5, 1.6, 1.6, "#1A1A1A");
+  ctx.restore();
+}
 
+/** A fleeing squirrel or duck, facing its direction of travel. */
+function drawQuarry(
+  ctx: CanvasRenderingContext2D,
+  kind: Quarry,
+  x: number,
+  groundY: number,
+  facing: 1 | -1,
+  t: number,
+  lift: number
+) {
+  ctx.save();
+  ctx.translate(x, groundY - lift);
+  ctx.scale(facing, 1);
+  ctx.lineCap = "round";
+  if (kind === "squirrel") {
+    // Bushy tail
+    ctx.strokeStyle = "#A07C5C";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(-5, -7);
+    ctx.quadraticCurveTo(-15, -14, -9, -22 + Math.sin(t * 12) * 1.5);
+    ctx.stroke();
+    ellipse(ctx, 0, -7, 7, 4.5, "#8C6A4F");
+    ellipse(ctx, 7, -11, 3.6, 3.2, "#8C6A4F");
+    ellipse(ctx, 6.5, -15, 1.2, 2, "#8C6A4F");
+    ellipse(ctx, 2, -6, 3, 2.4, "#D8C2A8");
+    ellipse(ctx, 8.2, -11.8, 0.8, 0.8, "#111");
+    ctx.strokeStyle = "#6E513B";
+    ctx.lineWidth = 2;
+    const s = Math.sin(t * 18);
+    ctx.beginPath();
+    ctx.moveTo(-3, -4);
+    ctx.lineTo(-5 - s * 2, -0.5);
+    ctx.moveTo(4, -4);
+    ctx.lineTo(5 + s * 2, -0.5);
+    ctx.stroke();
+  } else {
+    // Mallard
+    const flap = Math.sin(t * 16);
+    ellipse(ctx, 0, -9, 9, 5.5, "#8B6B4A");
+    ellipse(ctx, -6, -11, 4, 2.5, "#F4F1EC");
+    ellipse(ctx, 8, -15, 3.8, 3.4, "#2E7D4F");
+    ctx.strokeStyle = "#F4F1EC";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(8, -15, 3.9, 1.6, 2.6);
+    ctx.stroke();
+    ellipse(ctx, 12.5, -14.5, 2.6, 1.3, "#E8B33A");
+    ellipse(ctx, 9, -16, 0.7, 0.7, "#111");
+    ellipse(ctx, -1, -11 - flap * 3, 6, 2.6, "#6E5640", flap * 0.5);
+    ellipse(ctx, 1, -10.5 - flap * 3, 2, 1, "#3D5BA9", flap * 0.5);
+    if (lift < 2) {
+      ctx.strokeStyle = "#E8902F";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-1, -4);
+      ctx.lineTo(-1 + flap * 2, 0);
+      ctx.moveTo(2, -4);
+      ctx.lineTo(2 - flap * 2, 0);
+      ctx.stroke();
+    }
+  }
   ctx.restore();
 }
 
 interface Obstacle {
-  x: number;
+  kind: ObKind;
+  x: number; // left edge
   w: number;
-  h: number;
-  kind: "hydrant" | "log";
+  h: number; // collision height for jump-over obstacles
+  passed?: boolean;
 }
 
-function drawObstacle(ctx: CanvasRenderingContext2D, o: Obstacle, groundY: number) {
-  const top = groundY - o.h;
-  if (o.kind === "hydrant") {
-    const count = Math.round(o.w / 12);
-    for (let i = 0; i < count; i++) {
-      const x = o.x + i * 14;
-      ctx.fillStyle = "#C0392B";
-      ctx.fillRect(x + 2, top + 4, 8, o.h - 4);
-      ctx.fillRect(x, top + 9, 12, 3);
-      ctx.beginPath();
-      ctx.arc(x + 6, top + 4, 4, Math.PI, 0);
-      ctx.fill();
-      ctx.fillRect(x + 1, groundY - 3, 10, 3);
+function drawObstacle(ctx: CanvasRenderingContext2D, o: Obstacle, gy: number) {
+  const x = o.x;
+  switch (o.kind) {
+    case "bush": {
+      ellipse(ctx, x + 9, gy - 8, 9, 8, "#5E8C4A");
+      ellipse(ctx, x + 21, gy - 9, 9, 9, "#5E8C4A");
+      ellipse(ctx, x + 15, gy - 15, 9, 7, "#6F9E58");
+      ellipse(ctx, x + 12, gy - 16, 3, 2, "#8DB873");
+      break;
     }
-  } else {
-    ctx.fillStyle = "#8B5A2B";
-    ctx.beginPath();
-    ctx.roundRect(o.x, top, o.w, o.h, 4);
-    ctx.fill();
-    ellipse(ctx, o.x + o.w - 3, top + o.h / 2, 3, o.h / 2 - 1, "#C49A6C");
+    case "hydrant": {
+      ctx.fillStyle = "#C0392B";
+      ctx.fillRect(x + 2, gy - o.h + 4, 8, o.h - 4);
+      ctx.fillRect(x, gy - o.h + 9, 12, 3);
+      ctx.beginPath();
+      ctx.arc(x + 6, gy - o.h + 4, 4, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(x + 1, gy - 3, 10, 3);
+      break;
+    }
+    case "fence": {
+      ctx.fillStyle = "#D9C7A8";
+      for (let i = 0; i < 3; i++) {
+        const px = x + 2 + i * 10;
+        ctx.beginPath();
+        ctx.moveTo(px, gy);
+        ctx.lineTo(px, gy - o.h + 4);
+        ctx.lineTo(px + 3, gy - o.h);
+        ctx.lineTo(px + 6, gy - o.h + 4);
+        ctx.lineTo(px + 6, gy);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.fillStyle = "#C2AD8A";
+      ctx.fillRect(x, gy - o.h + 8, o.w, 3);
+      ctx.fillRect(x, gy - 9, o.w, 3);
+      break;
+    }
+    case "tire": {
+      const cx = x + o.w / 2;
+      // Stand
+      ctx.fillStyle = "#3B82C4";
+      ctx.fillRect(cx - 7, gy - TIRE_STAND_H, 14, TIRE_STAND_H);
+      ctx.fillStyle = "#E8EEF5";
+      ctx.fillRect(cx - 7, gy - TIRE_STAND_H + 12, 14, 4);
+      ctx.fillRect(cx - 7, gy - TIRE_STAND_H + 28, 14, 4);
+      // Tire ring (seen edge-on as a tall ellipse with a hole)
+      const cy = gy - TIRE_CENTER;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 9, (TIRE_INNER_HI - TIRE_INNER_LO) / 2 + 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, 4.5, (TIRE_INNER_HI - TIRE_INNER_LO) / 2, 0, 0, Math.PI * 2, true);
+      ctx.fillStyle = "#2B2B2E";
+      ctx.fill("evenodd");
+      break;
+    }
+    case "hole": {
+      // Tall fence with a hole at the bottom
+      ctx.fillStyle = "#B08A5E";
+      ctx.fillRect(x, gy - HOLE_TOP, o.w, HOLE_TOP - HOLE_GAP);
+      ctx.fillStyle = "#9A764D";
+      for (let i = 1; i < 3; i++) ctx.fillRect(x + (o.w / 3) * i - 0.5, gy - HOLE_TOP, 1, HOLE_TOP - HOLE_GAP);
+      // Ragged hole edge
+      ctx.beginPath();
+      ctx.moveTo(x, gy - HOLE_GAP);
+      for (let i = 0; i <= 6; i++) ctx.lineTo(x + (o.w / 6) * i, gy - HOLE_GAP + (i % 2 ? 3 : 0));
+      ctx.lineTo(x + o.w, gy - HOLE_GAP - 1);
+      ctx.lineTo(x, gy - HOLE_GAP - 1);
+      ctx.fill();
+      // Posts at the ends
+      ctx.fillStyle = "#8C6A44";
+      ctx.fillRect(x - 2, gy - HOLE_TOP - 4, 4, HOLE_TOP + 4);
+      ctx.fillRect(x + o.w - 2, gy - HOLE_TOP - 4, 4, HOLE_TOP + 4);
+      break;
+    }
   }
 }
 
-interface RunnerDog {
+function makeObstacle(kind: ObKind, x: number): Obstacle {
+  switch (kind) {
+    case "bush":
+      return { kind, x, w: 30, h: 20 };
+    case "hydrant":
+      return { kind, x, w: 12, h: 22 };
+    case "fence":
+      return { kind, x, w: 30, h: 26 };
+    case "tire":
+      return { kind, x, w: 18, h: TIRE_STAND_H };
+    case "hole":
+      return { kind, x, w: 30, h: HOLE_TOP };
+  }
+}
+
+interface Follower {
   breed: Breed;
   x: number;
-  lift: number;
-  vy: number;
+  targetX: number;
+  phase: number;
 }
 
 interface Game {
   mode: Mode;
-  lead: number;
+  lead: number; // index into BREEDS
+  ambientFront: number;
   speed: number;
   score: number;
   best: number;
   obstacles: Obstacle[];
-  dogs: RunnerDog[];
+  lift: number;
+  vy: number;
+  crawlHeld: boolean;
+  crawlUntil: number;
+  crashed: boolean;
+  followers: Follower[];
+  quarry: Quarry;
+  quarryX: number;
   hintUntil: number;
 }
 
@@ -245,25 +449,36 @@ function writeBest(v: number) {
 }
 
 function atBottomOfPage() {
-  return (
-    window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 24
-  );
+  return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 24;
+}
+
+/** Triangle wave: position along a back-and-forth path of length `travel`, and direction. */
+function bounce(u: number, travel: number): { pos: number; dir: 1 | -1 } {
+  const m = ((u % (travel * 2)) + travel * 2) % (travel * 2);
+  return m < travel ? { pos: m, dir: 1 } : { pos: travel * 2 - m, dir: -1 };
 }
 
 export function DogRun() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mode, setMode] = useState<Mode>("ambient");
   const [isTouch, setIsTouch] = useState(false);
-  // Same flag, readable inside the animation loop
   const isTouchRef = useRef(false);
   const game = useRef<Game>({
     mode: "ambient",
-    lead: 2, // first round advances to the lab
+    lead: 0,
+    ambientFront: 0,
     speed: START_SPEED,
     score: 0,
     best: 0,
     obstacles: [],
-    dogs: [],
+    lift: 0,
+    vy: 0,
+    crawlHeld: false,
+    crawlUntil: 0,
+    crashed: false,
+    followers: [],
+    quarry: "squirrel",
+    quarryX: 0,
     hintUntil: 0,
   });
 
@@ -292,65 +507,108 @@ export function DogRun() {
     let last = performance.now();
     let clock = 0;
 
-    const setMode2 = (m: Mode) => {
+    const setGameMode = (m: Mode) => {
       g.mode = m;
       setMode(m);
     };
 
-    const startGame = () => {
-      g.lead = (g.lead + 1) % 3;
+    const startGame = (leadIndex: number) => {
+      g.lead = leadIndex;
       g.speed = START_SPEED;
       g.score = 0;
       g.obstacles = [];
-      g.dogs = [0, 1, 2].map((i) => ({
-        breed: BREEDS[(g.lead + i) % 3],
-        x: 130 - i * 42,
-        lift: 0,
-        vy: 0,
-      }));
-      g.hintUntil = clock + 2.2;
-      setMode2("playing");
+      g.lift = 0;
+      g.vy = 0;
+      g.crawlHeld = false;
+      g.crawlUntil = 0;
+      g.crashed = false;
+      g.followers = [];
+      g.quarry = Math.random() < 0.5 ? "squirrel" : "duck";
+      g.quarryX = LEAD_X + 110;
+      g.hintUntil = clock + 2.6;
+      setGameMode("playing");
       requestAnimationFrame(() =>
         window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" })
       );
     };
 
-    const jump = (d: RunnerDog) => {
-      if (d.lift === 0) d.vy = JUMP_V;
+    const jump = () => {
+      if (g.mode === "playing" && !g.crashed && g.lift === 0) g.vy = JUMP_V;
     };
 
-    const onKey = (e: KeyboardEvent) => {
+    const isCrawling = () => g.lift === 0 && (g.crawlHeld || clock < g.crawlUntil);
+
+    const crash = () => {
+      g.crashed = true;
+      const final = Math.floor(g.score);
+      if (final > g.best) {
+        g.best = final;
+        writeBest(final);
+      }
+      // The other two run up from behind to play with the sad chaser
+      g.followers = [1, 2].map((i) => ({
+        breed: BREEDS[(g.lead + i) % 3],
+        x: -40 - i * 50,
+        targetX: LEAD_X - 46 * i,
+        phase: i * 1.7,
+      }));
+      setGameMode("over");
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
 
       if (e.code === "Escape" && g.mode !== "ambient") {
-        setMode2("ambient");
+        setGameMode("ambient");
         return;
       }
-      if (e.code !== "Space") return;
+      if (g.mode === "playing" && (e.code === "ArrowDown" || e.code === "KeyS")) {
+        e.preventDefault();
+        g.crawlHeld = true;
+        if (g.lift > 0) g.vy = Math.min(g.vy, -420); // drop faster
+        return;
+      }
+      const isJump = e.code === "Space" || (g.mode === "playing" && e.code === "ArrowUp");
+      if (!isJump) return;
       if (g.mode === "ambient") {
         if (!atBottomOfPage()) return; // only from the bottom of the page
         e.preventDefault();
-        startGame();
+        startGame(g.ambientFront);
       } else if (g.mode === "playing") {
         e.preventDefault();
-        jump(g.dogs[0]);
+        jump();
       } else {
         e.preventDefault();
-        startGame();
+        startGame((g.lead + 1) % 3); // the next dog gets a turn
       }
     };
-    window.addEventListener("keydown", onKey);
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "ArrowDown" || e.code === "KeyS") g.crawlHeld = false;
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
 
-    const onPointer = (e: PointerEvent) => {
-      if (g.mode === "playing") {
-        e.preventDefault();
-        jump(g.dogs[0]);
+    // Touch: tap to jump, swipe down to crawl
+    let downY: number | null = null;
+    const onPointerDown = (e: PointerEvent) => {
+      downY = e.clientY;
+      if (g.mode === "ambient") startGame(g.ambientFront);
+      else if (g.mode === "over") startGame((g.lead + 1) % 3);
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      if (downY === null || g.mode !== "playing") return;
+      const dy = e.clientY - downY;
+      downY = null;
+      if (dy > 25) {
+        g.crawlUntil = clock + 0.8;
+        if (g.lift > 0) g.vy = Math.min(g.vy, -420);
       } else {
-        startGame();
+        jump();
       }
     };
-    canvas.addEventListener("pointerdown", onPointer);
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointerup", onPointerUp);
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -364,139 +622,192 @@ export function DogRun() {
       return { w, h };
     };
 
-    const drawAmbient = (w: number, h: number) => {
-      const groundY = h - 8;
-      ctx.strokeStyle = "#E4E4E7";
+    const ground = (w: number, gy: number, color: string) => {
+      ctx.strokeStyle = color;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(0, groundY + 0.5);
-      ctx.lineTo(w, groundY + 0.5);
+      ctx.moveTo(0, gy + 0.5);
+      ctx.lineTo(w, gy + 0.5);
       ctx.stroke();
+    };
+
+    const drawAmbient = (w: number, h: number) => {
+      const gy = h - 8;
+      ground(w, gy, "#E4E4E7");
 
       const t = reduceMotion ? 3 : clock;
       const margin = 60;
-      const travel = Math.max(40, w - margin * 2);
-      const u = (t * 70) % (travel * 2);
-      const dir: 1 | -1 = u < travel ? 1 : -1;
-      const pos = margin + (u < travel ? u : travel * 2 - u);
+      const travel = Math.max(60, w - margin * 2);
+      const u = t * 70;
+      const pack = bounce(u, travel);
 
-      // Each dog drifts ahead of / behind the pack on its own cycle, so the leader rotates.
+      // The quarry runs 100px ahead along the same back-and-forth path, so it
+      // turns first and the pack follows it around.
+      const lead = 100;
+      const q = bounce(u + lead, travel);
+      const quarry: Quarry = Math.floor((u + lead) / travel) % 2 === 0 ? "squirrel" : "duck";
+      const qLift =
+        quarry === "squirrel" ? 6 * Math.abs(Math.sin(t * 9)) : 10 + 3 * Math.sin(t * 6);
+      drawQuarry(ctx, quarry, margin + q.pos, gy, q.dir, t, reduceMotion ? 0 : qLift);
+
       const dogs = BREEDS.map((breed, i) => ({
+        i,
         breed,
-        x: pos + 38 * Math.sin(0.55 * t + (i * Math.PI * 2) / 3),
+        x: margin + pack.pos + 38 * Math.sin(0.55 * t + (i * Math.PI * 2) / 3),
         phase: t * 13 + i * 1.7,
       }));
-      dogs.sort((a, b) => dir * a.x - dir * b.x); // dog in front draws last
+      dogs.sort((a, b) => pack.dir * a.x - pack.dir * b.x); // front dog draws last
+      g.ambientFront = dogs[dogs.length - 1].i;
       for (const d of dogs) {
         const lift = reduceMotion ? 0 : 2 * Math.abs(Math.sin(d.phase));
-        drawDog(ctx, d.breed, d.x, groundY, dir, d.phase, lift, false);
+        drawDog(ctx, d.breed, d.x, gy, pack.dir, d.phase, lift, reduceMotion ? "stand" : "run");
       }
     };
 
+    const pickKind = (): ObKind => {
+      const pool: ObKind[] = ["bush", "hydrant", "fence", "bush", "hydrant", "fence"];
+      if (g.score > 50) pool.push("hole", "hole");
+      if (g.score > 100) pool.push("tire", "tire");
+      return pool[Math.floor(Math.random() * pool.length)];
+    };
+
     const updateGame = (dt: number, w: number) => {
-      g.speed = Math.min(MAX_SPEED, g.speed + 9 * dt);
-      g.score += (g.speed * dt) / 10;
-
-      // Obstacles
-      for (const o of g.obstacles) o.x -= g.speed * dt;
-      g.obstacles = g.obstacles.filter((o) => o.x + o.w > -20);
-      const lastOb = g.obstacles[g.obstacles.length - 1];
-      const gap = g.speed * (0.8 + Math.random() * 0.9);
-      if (!lastOb ? g.score > 25 : lastOb.x < w - gap) {
-        const double = g.speed > 480 && Math.random() < 0.3;
-        g.obstacles.push(
-          Math.random() < 0.55
-            ? { x: w + 10, w: double ? 26 : 12, h: 22, kind: "hydrant" }
-            : { x: w + 10, w: 26, h: 14, kind: "log" }
-        );
-      }
-
-      // Followers jump on their own
-      for (let i = 1; i < g.dogs.length; i++) {
-        const d = g.dogs[i];
-        const ahead = g.obstacles.find((o) => o.x + o.w > d.x - 16);
-        if (ahead) {
-          const dist = ahead.x - (d.x + 24);
-          if (dist > 0 && dist < g.speed * 0.16) jump(d);
+      // Physics for the chaser (also lets it fall after a mid-air crash)
+      if (g.lift > 0 || g.vy > 0) {
+        g.vy -= GRAVITY * dt;
+        g.lift += g.vy * dt;
+        if (g.lift <= 0) {
+          g.lift = 0;
+          g.vy = 0;
         }
       }
 
-      // Physics
-      for (const d of g.dogs) {
-        if (d.lift > 0 || d.vy > 0) {
-          d.vy -= GRAVITY * dt;
-          d.lift += d.vy * dt;
-          if (d.lift <= 0) {
-            d.lift = 0;
-            d.vy = 0;
+      if (g.crashed) {
+        // Quarry escapes; friends run up
+        g.quarryX += 300 * dt;
+        for (const f of g.followers) {
+          if (f.x < f.targetX) f.x = Math.min(f.targetX, f.x + 240 * dt);
+        }
+        return;
+      }
+
+      g.speed = Math.min(MAX_SPEED, g.speed + 8 * dt);
+      g.score += (g.speed * dt) / 10;
+      g.quarryX = LEAD_X + 110 + 8 * Math.sin(clock * 1.3);
+
+      const dogCenter = LEAD_X + 4;
+      for (const o of g.obstacles) {
+        const prevCenter = o.x + o.w / 2;
+        o.x -= g.speed * dt;
+        const center = o.x + o.w / 2;
+        if (!o.passed && prevCenter > dogCenter && center <= dogCenter) {
+          o.passed = true;
+          // Tire: the dog's middle has to go through the hole
+          if (o.kind === "tire") {
+            const mid = g.lift + 13;
+            if (mid < TIRE_INNER_LO || mid > TIRE_INNER_HI) {
+              crash();
+              return;
+            }
           }
         }
       }
+      g.obstacles = g.obstacles.filter((o) => o.x + o.w > -30);
 
-      // Collision: lead dog only
-      const lead = g.dogs[0];
-      const groundY = GAME_H - 12;
-      const dl = lead.x - 16;
-      const dr = lead.x + 24;
-      const dBottom = groundY - lead.lift;
-      const dTop = dBottom - 30;
+      const lastOb = g.obstacles[g.obstacles.length - 1];
+      const gap = g.speed * (0.85 + Math.random() * 0.9);
+      if (lastOb ? lastOb.x < w - gap : g.score > 20) {
+        g.obstacles.push(makeObstacle(pickKind(), w + 10));
+      }
+
+      // Collision with the chaser
+      const crawling = isCrawling();
+      const height = crawling ? 20 : g.lift > 0 ? 26 : 30;
+      const left = LEAD_X - 16;
+      const right = LEAD_X + 24;
+      const bottom = g.lift;
+      const top = g.lift + height;
       for (const o of g.obstacles) {
         const ol = o.x + 3;
         const or = o.x + o.w - 3;
-        const oTop = groundY - o.h + 3;
-        if (dr > ol && dl < or && dBottom > oTop && dTop < groundY) {
-          const final = Math.floor(g.score);
-          if (final > g.best) {
-            g.best = final;
-            writeBest(final);
-          }
-          setMode2("over");
-          break;
+        if (right <= ol || left >= or) continue;
+        if (o.kind === "hole") {
+          // Must crawl through the gap under the fence
+          if (top > HOLE_GAP + 1 && bottom < HOLE_TOP) return crash();
+        } else if (o.kind === "tire") {
+          // The stand blocks a dog that stays low
+          const sl = o.x + o.w / 2 - 7;
+          const sr = o.x + o.w / 2 + 7;
+          if (right > sl && left < sr && bottom < TIRE_STAND_H - 2) return crash();
+        } else if (bottom < o.h - 3) {
+          return crash();
         }
       }
     };
 
     const drawGame = (w: number, h: number) => {
-      const groundY = h - 12;
-      ctx.strokeStyle = "#D4D4D8";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, groundY + 0.5);
-      ctx.lineTo(w, groundY + 0.5);
-      ctx.stroke();
+      const gy = h - GROUND_PAD;
+      ground(w, gy, "#D4D4D8");
 
-      for (const o of g.obstacles) drawObstacle(ctx, o, groundY);
+      for (const o of g.obstacles) drawObstacle(ctx, o, gy);
 
-      for (let i = g.dogs.length - 1; i >= 0; i--) {
-        const d = g.dogs[i];
-        const phase = clock * (g.speed / 26) + i * 1.7;
-        drawDog(ctx, d.breed, d.x, groundY, 1, phase, d.lift, d.lift > 0);
+      // Quarry
+      if (g.quarryX < w + 40) {
+        const qLift =
+          g.quarry === "squirrel"
+            ? 9 * Math.abs(Math.sin(clock * 10))
+            : 30 + 8 * Math.sin(clock * 5);
+        drawQuarry(ctx, g.quarry, g.quarryX, gy, 1, clock, qLift);
       }
 
+      // Friends who ran up after the miss
+      for (const f of g.followers) {
+        const arrived = f.x >= f.targetX;
+        drawDog(ctx, f.breed, f.x, gy, 1, clock * 13 + f.phase, arrived ? 0 : 2 * Math.abs(Math.sin(clock * 13 + f.phase)), arrived ? "stand" : "run");
+      }
+
+      // The chaser
+      const breed = BREEDS[g.lead];
+      let pose: Pose = "run";
+      if (g.crashed) pose = g.lift > 0 ? "air" : "sad";
+      else if (g.lift > 0) pose = "air";
+      else if (isCrawling()) pose = "crawl";
+      const phase = clock * (g.speed / 26);
+      drawDog(ctx, breed, LEAD_X, gy, 1, phase, g.lift, pose);
+
+      // HUD
       ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
       ctx.fillStyle = "#71717A";
       ctx.textAlign = "right";
       const pad = (n: number) => String(n).padStart(5, "0");
-      ctx.fillText(`HI ${pad(g.best)}  ${pad(Math.floor(g.score))}`, w - 12, 18);
-
+      ctx.fillText(`HI ${pad(g.best)}  ${pad(Math.floor(g.score))}`, w - 12, 16);
       ctx.textAlign = "left";
-      ctx.fillText(`Lead: ${BREED_NAMES[g.dogs[0].breed]}`, 12, 18);
+      ctx.fillText(`${BREED_NAMES[breed]} vs. the ${g.quarry}`, 12, 16);
 
       ctx.textAlign = "center";
+      ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
       if (g.mode === "over") {
         ctx.fillStyle = "#3F3F46";
         ctx.font = "13px ui-sans-serif, system-ui, sans-serif";
-        ctx.fillText("Game over", w / 2, 52);
+        ctx.fillText(`The ${g.quarry} got away!`, w / 2, 40);
         ctx.fillStyle = "#71717A";
         ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
         ctx.fillText(
-          isTouchRef.current ? "Tap to play again" : "Space to play again · Esc to exit",
+          isTouchRef.current
+            ? "Tap to give the next dog a turn"
+            : "Space to give the next dog a turn · Esc to exit",
           w / 2,
-          70
+          58
         );
       } else if (clock < g.hintUntil) {
-        ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
-        ctx.fillText(isTouchRef.current ? "Tap to jump" : "Space to jump · Esc to exit", w / 2, 52);
+        ctx.fillStyle = "#71717A";
+        ctx.fillText(
+          isTouchRef.current
+            ? "Tap to jump · swipe down to crawl"
+            : "Space or ↑ to jump · ↓ to crawl · Esc to exit",
+          w / 2,
+          40
+        );
       }
     };
 
@@ -511,7 +822,7 @@ export function DogRun() {
         if (g.mode === "ambient") {
           drawAmbient(w, h);
         } else {
-          if (g.mode === "playing") updateGame(dt, w);
+          updateGame(dt, w);
           drawGame(w, h);
         }
       }
@@ -521,8 +832,10 @@ export function DogRun() {
 
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("keydown", onKey);
-      canvas.removeEventListener("pointerdown", onPointer);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointerup", onPointerUp);
       io.disconnect();
     };
   }, []);
@@ -531,10 +844,10 @@ export function DogRun() {
     <div className="w-full">
       <canvas
         ref={canvasRef}
-        className="block w-full touch-manipulation select-none"
+        className={`block w-full select-none ${mode === "ambient" ? "touch-manipulation" : "touch-none"}`}
         style={{ height: mode === "ambient" ? AMBIENT_H : GAME_H }}
         role="img"
-        aria-label="A chocolate lab, an Australian shepherd and an English springer spaniel chasing each other. Press Space at the bottom of the page to play a jumping game."
+        aria-label="A chocolate lab, a red merle Australian shepherd and a brown roan English springer spaniel chasing a squirrel or a duck. Press Space at the bottom of the page to play a chasing game."
       />
       {mode === "ambient" && (
         <p className="text-center text-[11px] tracking-wider uppercase text-zinc-400 mt-1">

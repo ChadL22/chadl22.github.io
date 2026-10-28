@@ -78,9 +78,8 @@ export default function Home() {
                           pages={Array.from(
                             { length: Math.ceil(experienceData.length / 3) },
                             (_, p) => experienceData.slice(p * 3, p * 3 + 3)
-                          ).map((list, p, all) => ({
+                          ).map((list) => ({
                             label: list.every((e) => e.date) ? "Current" : "Previous",
-                            meta: `${p + 1} of ${all.length}`,
                             content: (
                               <div className="divide-y divide-zinc-200">
                                 {list.map((experience, index) => (
@@ -96,9 +95,11 @@ export default function Home() {
                 case Section.Portfolio:
                   return (
                     portfolioData.length > 0 && (
-                      <SectionCard key={sectionName} id="portfolio" title="Portfolio" boxed={false}>
+                      <SectionCard key={sectionName} id="research-projects" title="Research Projects" boxed={false}>
+                        {/* Sized to the longest project so there's no empty band under the text */}
                         <PagedCard
-                          ariaLabel="Portfolio"
+                          ariaLabel="Research projects"
+                          bodyHeight="auto"
                           pages={portfolioData.map((portfolio, index) => ({
                             label: `${index + 1} of ${portfolioData.length}`,
                             content: <PortfolioEntry portfolio={portfolio} />,

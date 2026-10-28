@@ -7,7 +7,9 @@ export function ExperienceEntry({ experience }: { experience: Experience }) {
         <h3 className="font-serif text-base text-zinc-900 leading-snug">
           {experience.title}
         </h3>
-        <span className="text-xs text-zinc-500 whitespace-nowrap">{experience.date}</span>
+        {experience.date && (
+          <span className="text-xs text-zinc-500 whitespace-nowrap">{experience.date}</span>
+        )}
       </div>
       <p className="text-sm text-zinc-600 mt-0.5">
         {experience.companyUrl ? (

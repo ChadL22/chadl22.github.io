@@ -11,6 +11,7 @@ import { experienceData } from "@/data/experience";
 import { PortfolioEntry } from "@/components/portfolio-entry";
 import { portfolioData } from "@/data/portfolio";
 import { SectionCard } from "@/components/section-card";
+import { PagedCard } from "@/components/paged-card";
 import { sectionOrder, Section } from "@/data/section-order";
 
 export default function Home() {
@@ -69,20 +70,40 @@ export default function Home() {
                 case Section.Experience:
                   return (
                     experienceData.length > 0 && (
-                      <SectionCard key={sectionName} id="experience" title="Experience">
-                        {experienceData.map((experience, index) => (
-                          <ExperienceEntry key={index} experience={experience} />
-                        ))}
+                      <SectionCard key={sectionName} id="experience" title="Experience" boxed={false}>
+                        <PagedCard
+                          ariaLabel="Experience"
+                          pages={[
+                            { label: "Current", list: experienceData.filter((e) => e.date) },
+                            { label: "Previous", list: experienceData.filter((e) => !e.date) },
+                          ]
+                            .filter((g) => g.list.length > 0)
+                            .map((g) => ({
+                              label: g.label,
+                              meta: `${g.list.length} ${g.list.length === 1 ? "role" : "roles"}`,
+                              content: (
+                                <div className="divide-y divide-zinc-200">
+                                  {g.list.map((experience, index) => (
+                                    <ExperienceEntry key={index} experience={experience} />
+                                  ))}
+                                </div>
+                              ),
+                            }))}
+                        />
                       </SectionCard>
                     )
                   );
                 case Section.Portfolio:
                   return (
                     portfolioData.length > 0 && (
-                      <SectionCard key={sectionName} id="portfolio" title="Portfolio">
-                        {portfolioData.map((portfolio, index) => (
-                          <PortfolioEntry key={index} portfolio={portfolio} />
-                        ))}
+                      <SectionCard key={sectionName} id="portfolio" title="Portfolio" boxed={false}>
+                        <PagedCard
+                          ariaLabel="Portfolio"
+                          pages={portfolioData.map((portfolio, index) => ({
+                            label: `${index + 1} of ${portfolioData.length}`,
+                            content: <PortfolioEntry portfolio={portfolio} />,
+                          }))}
+                        />
                       </SectionCard>
                     )
                   );

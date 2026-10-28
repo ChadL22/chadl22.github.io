@@ -9,7 +9,7 @@ export const newsData: News[] = [
   {
     date: "2026",
     title: "Launched Phronesis",
-    description: "Phronesis is a free, curated research library providing technologists, legal professionals, and policymakers with hand-selected resources at the intersection of technology, law, and policy.",
+    description: "A nonprofit research library offering free access to hand-selected academic, legal, and technical resources on technology policy.",
     link: "https://phronesisresearch.org",
   },
   {

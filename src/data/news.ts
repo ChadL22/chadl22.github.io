@@ -88,7 +88,7 @@ export const newsData: News[] = [
     date: "2022",
     title: "Impact Manager Demoed at the White House",
     description: "The Impact Manager project, addressing food insecurity, was demoed at the White House.",
-    link: "https://ushunger.org/datacenter/",
+    link: "https://ushunger.org/datacenter/#:~:text=U.S.%20HUNGER%20DATABASE",
   },
   {
     date: "2021",

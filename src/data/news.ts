@@ -8,32 +8,32 @@ export interface News {
 export const newsData: News[] = [
   {
     date: "2026",
-    title: "Launching Phronesis Research",
-    description: "Phronesis is a curated research library for technologists, legal professionals, and policymakers exploring topics at the intersection of technology, law, and policy. Through it we provide free access to primary and secondary sources on technology policy, each hand-selected for relevance and quality.",
+    title: "Launched Phronesis",
+    description: "Phronesis is a free, curated research library providing technologists, legal professionals, and policymakers with hand-selected resources at the intersection of technology, law, and policy.",
     link: "https://phronesisresearch.org",
   },
   {
     date: "2026",
     title: "Emerging Tech For Social Good Summit",
-    description: "Attending the Emerging Tech For Social Good Summit to explore how emerging technologies can be leveraged to address social challenges and create positive impact.",
+    description: "Attended the Emerging Tech For Social Good Summit to explore how emerging technologies can be leveraged to address social challenges and create positive impact.",
     link: "https://luma.com/CLTSG",
   },
    {
     date: "2025",
     title: "ISI Honors Conference",
-    description: "Honored to be selected to attend the ISI Honors Conference in 2025, where I'll engage with fellow scholars and academics as we discuss the foundations of the American order.",
+    description: "Selected to attend the ISI Honors Conference in 2025, where I engaged with fellow scholars and academics in discussions on the foundations of the American order.",
     link: "https://isi.org/event/isi-honors-conference-2025/",
   },
   {
     date: "2025",
-    title: "Attending the 2025 Responsible AI Symposium",
-    description: "Exciting news! I will be attending the 2025 Responsible AI Symposium at Duke University. Looking forward to some good presentations and great conversations!",
+    title: "Attended the 2025 Responsible AI Symposium",
+    description: "Attended the 2025 Responsible AI Symposium at Duke University, joining researchers and practitioners for presentations and conversations on responsible AI.",
     link: "https://www.responsibleaisymposium.com/",
   },
   {
     date: "2025",
     title: "A Beginner's Guide to Computational Modeling of Human Behavior",
-    description: "I recently created a GitHub page focused on computational models of human behavior. This repository is meant to help newcomers get their bearings in this complex and interdisciplinary field. While it's still a work in progress, it already has some useful tips and resources to help you get started!.",
+    description: "Created a GitHub guide to computational models of human behavior, with tips and resources to help newcomers get their bearings in this complex, interdisciplinary field.",
     link: "https://github.com/ChadL22/A-Beginner-s-Guide-to-Computational-Models-of-Human-Behavior/tree/main?tab=readme-ov-file#resources",
   },
   {
@@ -45,7 +45,7 @@ export const newsData: News[] = [
   {
     date: "2025",
     title: "AIS25 Conference Presentation in Finland",
-    description: "Presenting interdisciplinary research at the AIS25 Conference in Finland.",
+    description: "Presented interdisciplinary research at the AIS25 Conference in Finland.",
     link: "https://ais25.org", // Replace with actual conference link if available
   },
   {

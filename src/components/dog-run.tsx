@@ -16,9 +16,11 @@ import { useEffect, useRef, useState } from "react";
 
 type Breed = "lab" | "aussie" | "springer";
 type Mode = "ambient" | "intro" | "playing" | "over";
-type Pose = "run" | "air" | "crawl" | "sad" | "stand";
+type Pose = "run" | "air" | "crawl" | "sad" | "stand" | "swim";
 type Quarry = "squirrel" | "duck";
-type ObKind = "bush" | "hydrant" | "fence" | "tire" | "hole";
+type ObKind = "bush" | "hydrant" | "fence" | "tire" | "hole" | "puddle";
+type Level = "land" | "water";
+type WaterKind = "fish" | "kelp" | "moss";
 
 const BREEDS: Breed[] = ["lab", "aussie", "springer"];
 const SHORT_NAMES: Record<Breed, string> = { lab: "Lab", aussie: "Aussie", springer: "Springer" };
@@ -231,6 +233,10 @@ function drawDog(
     if (pose === "air") {
       a = hipX > 0 ? 0.95 : -0.95;
       raise = 3;
+    } else if (pose === "swim") {
+      // Doggy paddle: quick, short strokes
+      a = Math.sin(phase * 1.4 + offset) * 0.9;
+      raise = 2 + Math.cos(phase * 1.4 + offset) * 1.5;
     } else if (still) {
       a = offset > 0.3 ? 0.2 : -0.1;
       raise = 0;
@@ -326,6 +332,17 @@ function drawDog(
     ellipse(ctx, 16, -30, 5, 4, p.patch);
     ellipse(ctx, 13, -24, 3, 6.5, p.patch, 0.2);
   }
+
+  // Navy blue collar with a little gold tag
+  ctx.strokeStyle = "#1E2A5A";
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = "butt";
+  ctx.beginPath();
+  ctx.moveTo(9.4, -24.4);
+  ctx.lineTo(16.8, -20.1);
+  ctx.stroke();
+  ctx.lineCap = "round";
+  ellipse(ctx, 13.6, -19.6, 1.1, 1.3, "#E0B23A");
 
   // Eye: closed and teary when sad
   if (droop) {
@@ -505,6 +522,14 @@ function drawObstacle(ctx: CanvasRenderingContext2D, o: Obstacle, gy: number) {
       ctx.fill("evenodd");
       break;
     }
+    case "puddle": {
+      // A puddle in the trail: jump it, or fall in and end up underwater
+      const cx = x + o.w / 2;
+      ellipse(ctx, cx, gy + 2, o.w / 2, 5.5, "#4F8FC4");
+      ellipse(ctx, cx - 4, gy + 1, o.w / 2 - 8, 3, "#79B1DE");
+      ellipse(ctx, cx + o.w / 4, gy + 2.5, 4, 1, "rgba(255,255,255,0.7)");
+      break;
+    }
     case "hole": {
       // Tall fence with a hole at the bottom
       ctx.fillStyle = "#B08A5E";
@@ -539,6 +564,208 @@ function makeObstacle(kind: ObKind, x: number): Obstacle {
       return { kind, x, w: 18, h: TIRE_STAND_H };
     case "hole":
       return { kind, x, w: 30, h: HOLE_TOP };
+    case "puddle":
+      return { kind, x, w: 60, h: 0 };
+  }
+}
+
+// ---------- Underwater level ----------
+
+const SURFACE_Y = 30; // water surface (canvas y)
+const FLOOR_PAD = 14; // sand floor height at the bottom
+const WATER_STRETCH = 2600; // px swum before the sandbank appears
+const STROKE_V = -190; // one paddle stroke (px/s, upward)
+const SINK = 260; // px/s² drift down between strokes
+const MAX_SINK = 170;
+
+interface WaterOb {
+  kind: WaterKind;
+  x: number;
+  y: number; // fish: center line; kelp/moss: ignored
+  w: number;
+  h: number;
+  speed: number; // fish swim toward the dog on top of the scroll
+  wiggle: number;
+  color: string;
+}
+
+function makeWaterOb(kind: WaterKind, x: number, h: number): WaterOb {
+  const floorY = h - FLOOR_PAD;
+  if (kind === "fish") {
+    const colors = ["#F28C38", "#9FB4C7", "#E8C547", "#D9644A"];
+    return {
+      kind,
+      x,
+      y: SURFACE_Y + 22 + Math.random() * (floorY - SURFACE_Y - 38),
+      w: 20,
+      h: 9,
+      speed: 40 + Math.random() * 90,
+      wiggle: Math.random() * 6,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    };
+  }
+  if (kind === "kelp") {
+    // Seaweed growing up from the floor
+    return { kind, x, y: 0, w: 12, h: 42 + Math.random() * 42, speed: 0, wiggle: Math.random() * 6, color: "#3E8E5A" };
+  }
+  // Moss hanging down from the surface
+  return { kind, x, y: 0, w: 16, h: 30 + Math.random() * 30, speed: 0, wiggle: Math.random() * 6, color: "#5C7A3A" };
+}
+
+function drawWaterOb(ctx: CanvasRenderingContext2D, o: WaterOb, h: number, t: number) {
+  const floorY = h - FLOOR_PAD;
+  if (o.kind === "fish") {
+    // Swims left, toward the dog
+    const cx = o.x + o.w / 2;
+    const tail = Math.sin(t * 14 + o.wiggle) * 2;
+    ctx.fillStyle = o.color;
+    ctx.beginPath();
+    ctx.moveTo(o.x + o.w - 4, o.y);
+    ctx.lineTo(o.x + o.w + 5, o.y - 5 + tail);
+    ctx.lineTo(o.x + o.w + 5, o.y + 5 + tail);
+    ctx.closePath();
+    ctx.fill();
+    ellipse(ctx, cx, o.y, o.w / 2, o.h / 2, o.color);
+    ellipse(ctx, cx + 1, o.y + 1.5, o.w / 2 - 3, 1.6, "rgba(255,255,255,0.35)");
+    ellipse(ctx, o.x + 4, o.y - 1, 1.2, 1.2, "#1A1A1A");
+  } else if (o.kind === "kelp") {
+    const top = floorY - o.h;
+    for (let s = 0; s < 2; s++) {
+      const bx = o.x + 3 + s * 6;
+      ctx.strokeStyle = s ? "#4FA06A" : o.color;
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(bx, floorY);
+      for (let y = floorY; y >= top + s * 8; y -= 6) {
+        const sway = Math.sin(t * 2 + o.wiggle + y * 0.08 + s) * 3 * ((floorY - y) / o.h);
+        ctx.lineTo(bx + sway, y);
+      }
+      ctx.stroke();
+    }
+  } else {
+    // Moss clump with dangling strands
+    ellipse(ctx, o.x + o.w / 2, SURFACE_Y + 3, o.w / 2 + 2, 6, o.color);
+    ctx.strokeStyle = o.color;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    for (let s = 0; s < 4; s++) {
+      const sx = o.x + 2 + s * 4;
+      const len = o.h * (0.6 + 0.4 * ((s * 37) % 10) / 10);
+      ctx.beginPath();
+      ctx.moveTo(sx, SURFACE_Y + 4);
+      ctx.quadraticCurveTo(sx + Math.sin(t * 2 + s + o.wiggle) * 3, SURFACE_Y + len / 2, sx, SURFACE_Y + len);
+      ctx.stroke();
+    }
+  }
+}
+
+/** Collision box of a water hazard (slightly forgiving). */
+function waterObBox(o: WaterOb, h: number) {
+  const floorY = h - FLOOR_PAD;
+  if (o.kind === "fish") return { l: o.x + 2, r: o.x + o.w + 2, t: o.y - o.h / 2 + 1, b: o.y + o.h / 2 - 1 };
+  if (o.kind === "kelp") return { l: o.x + 2, r: o.x + o.w - 1, t: floorY - o.h + 4, b: floorY };
+  return { l: o.x + 1, r: o.x + o.w - 1, t: SURFACE_Y, b: SURFACE_Y + o.h * 0.85 };
+}
+
+/** Underwater scenery: water, light rays, rocks, bubbles and a sandy floor. */
+function drawUnderwater(ctx: CanvasRenderingContext2D, w: number, h: number, scroll: number, t: number) {
+  const floorY = h - FLOOR_PAD;
+  // Sky above the surface
+  ctx.fillStyle = "#D6E9F5";
+  ctx.fillRect(0, 0, w, SURFACE_Y);
+  // Water
+  const water = ctx.createLinearGradient(0, SURFACE_Y, 0, h);
+  water.addColorStop(0, "#7CC0E4");
+  water.addColorStop(1, "#2C6E9B");
+  ctx.fillStyle = water;
+  ctx.fillRect(0, SURFACE_Y, w, h - SURFACE_Y);
+
+  // Light rays
+  ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+  const raySpan = 140;
+  const rOff = (scroll * 0.15) % raySpan;
+  for (let i = -1; i <= Math.ceil(w / raySpan) + 1; i++) {
+    const x = i * raySpan - rOff;
+    ctx.beginPath();
+    ctx.moveTo(x, SURFACE_Y);
+    ctx.lineTo(x + 26, SURFACE_Y);
+    ctx.lineTo(x + 70, floorY);
+    ctx.lineTo(x + 34, floorY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Distant rocks
+  const rockShift = scroll * 0.3;
+  ctx.fillStyle = "#3F7DA6";
+  ctx.beginPath();
+  ctx.moveTo(0, floorY);
+  for (let x = 0; x <= w + 8; x += 8) {
+    const X = x + rockShift;
+    ctx.lineTo(x, floorY - 10 - 8 * Math.abs(Math.sin(X / 47)) - 5 * Math.sin(X / 19));
+  }
+  ctx.lineTo(w, floorY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Sand floor with pebbles
+  ctx.fillStyle = "#D9C38F";
+  ctx.fillRect(0, floorY, w, h - floorY);
+  const pebSpan = 27;
+  const pOff = scroll % pebSpan;
+  const pStart = Math.floor(scroll / pebSpan);
+  for (let i = -1; i <= Math.ceil(w / pebSpan) + 1; i++) {
+    const n = pStart + i + 900;
+    ellipse(ctx, i * pebSpan - pOff + hash(n) * 16, floorY + 3 + hash(n + 1) * (FLOOR_PAD - 5), 1.4, 0.9, "#BFA673");
+  }
+
+  // Rising bubbles
+  for (let i = 0; i < 14; i++) {
+    const bx = ((hash(i + 40) * w * 1.3 - scroll * 0.4) % (w + 40) + w + 40) % (w + 40) - 20;
+    const span = floorY - SURFACE_Y;
+    const by = floorY - ((t * (18 + hash(i) * 22) + hash(i + 3) * span) % span);
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.arc(bx + Math.sin(t * 2 + i) * 2, by, 1.2 + hash(i + 9) * 1.8, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Rippling surface line
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let x = 0; x <= w; x += 6) {
+    const y = SURFACE_Y + Math.sin((x + scroll * 0.6) / 14 + t * 2) * 1.5;
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+/** The sandbank the dog climbs out on: rises from the floor up past the surface. */
+function drawSandbank(ctx: CanvasRenderingContext2D, x: number, w: number, h: number) {
+  const floorY = h - FLOOR_PAD;
+  ctx.fillStyle = "#E3CF9F";
+  ctx.beginPath();
+  ctx.moveTo(x, floorY);
+  ctx.quadraticCurveTo(x + 70, floorY - 20, x + 120, SURFACE_Y - 8);
+  ctx.lineTo(Math.max(w, x + 200), SURFACE_Y - 8);
+  ctx.lineTo(Math.max(w, x + 200), h);
+  ctx.lineTo(x, h);
+  ctx.closePath();
+  ctx.fill();
+  // Grass tufts on top of the bank
+  ctx.strokeStyle = "#6FA24E";
+  ctx.lineWidth = 1.4;
+  for (let gx = x + 128; gx < Math.max(w, x + 200); gx += 14) {
+    ctx.beginPath();
+    ctx.moveTo(gx, SURFACE_Y - 8);
+    ctx.lineTo(gx - 2, SURFACE_Y - 13);
+    ctx.moveTo(gx + 2, SURFACE_Y - 8);
+    ctx.lineTo(gx + 3, SURFACE_Y - 13);
+    ctx.stroke();
   }
 }
 
@@ -573,6 +800,14 @@ interface Game {
   ambientBallX: number;
   intro: Intro | null;
   leadX: number; // where the chaser runs during play
+  // Underwater level
+  level: Level;
+  swimY: number; // chaser's feet line while swimming (canvas y)
+  swimVy: number;
+  waterObs: WaterOb[];
+  waterDist: number;
+  bankX: number | null; // the sandbank's left edge once it appears
+  trans: { kind: "toWater" | "toLand"; start: number; switched: boolean } | null;
 }
 
 /** The partition breaks and the dogs slide down into the game. */
@@ -650,6 +885,13 @@ export function DogRun() {
     ambientBallX: 0,
     intro: null,
     leadX: LEAD_X,
+    level: "land",
+    swimY: 0,
+    swimVy: 0,
+    waterObs: [],
+    waterDist: 0,
+    bankX: null,
+    trans: null,
   });
 
   useEffect(() => {
@@ -699,6 +941,11 @@ export function DogRun() {
       g.hintUntil = clock + 2.6;
       g.scroll = 0;
       g.intro = null;
+      g.level = "land";
+      g.waterObs = [];
+      g.waterDist = 0;
+      g.bankX = null;
+      g.trans = null;
       setGameMode("playing");
     };
 
@@ -731,7 +978,43 @@ export function DogRun() {
     };
 
     const jump = () => {
-      if (g.mode === "playing" && !g.crashed && g.lift === 0) g.vy = JUMP_V;
+      if (g.mode !== "playing" || g.crashed || g.trans) return;
+      if (g.level === "water") {
+        g.swimVy = STROKE_V; // one paddle stroke up
+        return;
+      }
+      if (g.lift === 0) g.vy = JUMP_V;
+    };
+
+    // Mario-style switch between levels: the view closes to a circle, then reopens
+    const startTrans = (kind: "toWater" | "toLand") => {
+      g.trans = { kind, start: clock, switched: false };
+    };
+
+    const updateTrans = (h: number) => {
+      const tr = g.trans;
+      if (!tr) return;
+      const T = clock - tr.start;
+      if (!tr.switched && T >= 0.45) {
+        tr.switched = true;
+        g.obstacles = [];
+        if (tr.kind === "toWater") {
+          g.level = "water";
+          g.waterObs = [];
+          g.waterDist = 0;
+          g.bankX = null;
+          g.swimY = (SURFACE_Y + (h - FLOOR_PAD)) / 2 + 10;
+          g.swimVy = 0;
+          g.hintUntil = clock + 2.8;
+        } else {
+          g.level = "land";
+          g.lift = 0;
+          g.vy = 0;
+          g.bankX = null;
+          g.waterObs = [];
+        }
+      }
+      if (T >= 0.9) g.trans = null;
     };
 
     const isCrawling = () => g.lift === 0 && (g.crawlHeld || clock < g.crawlUntil);
@@ -743,7 +1026,7 @@ export function DogRun() {
         g.best = final;
         writeBest(final);
       }
-      // The other two run up from behind to play with the sad chaser
+      // The other two run (or swim) up from behind to play with the sad chaser
       g.followers = [1, 2].map((i) => ({
         breed: BREEDS[(g.lead + i) % 3],
         // They come back from where they wandered off (behind) and stop beside their friend
@@ -874,10 +1157,89 @@ export function DogRun() {
       const pool: ObKind[] = ["bush", "hydrant", "fence", "bush", "hydrant", "fence"];
       if (g.score > 50) pool.push("hole", "hole");
       if (g.score > 100) pool.push("tire", "tire");
+      if (g.score > 40) pool.push("puddle");
       return pool[Math.floor(Math.random() * pool.length)];
     };
 
-    const updateGame = (dt: number, w: number) => {
+    const updateWater = (dt: number, w: number, h: number) => {
+      const floorY = h - FLOOR_PAD;
+
+      if (g.crashed) {
+        // The sad chaser drifts down; the others swim in
+        g.swimY = Math.min(floorY - 2, g.swimY + 25 * dt);
+        g.quarryX += 200 * dt;
+        for (const f of g.followers) {
+          if (f.x < f.targetX) f.x = Math.min(f.targetX, f.x + 200 * dt);
+        }
+        return;
+      }
+
+      // Swim physics: sink slowly between strokes; ↓ dives faster
+      const diving = g.crawlHeld || clock < g.crawlUntil;
+      g.swimVy = Math.min(diving ? MAX_SINK * 1.8 : MAX_SINK, g.swimVy + SINK * (diving ? 2.6 : 1) * dt);
+      g.swimY += g.swimVy * dt;
+      if (g.swimY < SURFACE_Y + 30) {
+        g.swimY = SURFACE_Y + 30;
+        g.swimVy = Math.max(0, g.swimVy);
+      }
+      if (g.swimY > floorY - 2) {
+        g.swimY = floorY - 2;
+        g.swimVy = Math.min(0, g.swimVy);
+      }
+
+      const ws = g.speed * 0.7; // slower underwater
+      g.speed = Math.min(MAX_SPEED, g.speed + 4 * dt);
+      g.score += (ws * dt) / 10;
+      g.scroll += ws * dt;
+      g.waterDist += ws * dt;
+      const qTarget = g.leadX + 130 + 8 * Math.sin(clock * 1.3);
+      g.quarryX += (qTarget - g.quarryX) * Math.min(1, dt * 2.5);
+
+      for (const o of g.waterObs) {
+        o.x -= (ws + o.speed) * dt;
+      }
+      g.waterObs = g.waterObs.filter((o) => o.x + o.w > -30);
+
+      if (g.waterDist < WATER_STRETCH) {
+        const lastOb = g.waterObs[g.waterObs.length - 1];
+        const gap = ws * (0.55 + Math.random() * 0.6);
+        if (!lastOb || lastOb.x < w - gap) {
+          const r = Math.random();
+          const kind: WaterKind = r < 0.5 ? "fish" : r < 0.75 ? "kelp" : "moss";
+          g.waterObs.push(makeWaterOb(kind, w + 10, h));
+        }
+      } else if (g.bankX === null) {
+        g.bankX = w + 20; // land ahead!
+      }
+
+      if (g.bankX !== null) {
+        g.bankX -= ws * dt;
+        if (g.bankX <= g.leadX - 30 && !g.trans) {
+          startTrans("toLand");
+          return;
+        }
+      }
+
+      // Collision: the swimming dog against fish, kelp and moss
+      const l = g.leadX - 14;
+      const r = g.leadX + 22;
+      const t = g.swimY - 24;
+      const b = g.swimY - 4;
+      for (const o of g.waterObs) {
+        const box = waterObBox(o, h);
+        if (r > box.l && l < box.r && b > box.t && t < box.b) return crash();
+      }
+    };
+
+    const updateGame = (dt: number, w: number, h: number) => {
+      if (g.trans) {
+        updateTrans(h);
+        return;
+      }
+      if (g.level === "water") {
+        updateWater(dt, w, h);
+        return;
+      }
       // Physics for the chaser (also lets it fall after a mid-air crash)
       if (g.lift > 0 || g.vy > 0) {
         g.vy -= GRAVITY * dt;
@@ -940,6 +1302,14 @@ export function DogRun() {
         const ol = o.x + 3;
         const or = o.x + o.w - 3;
         if (right <= ol || left >= or) continue;
+        if (o.kind === "puddle") {
+          // Running (not jumping) through the middle of a puddle: splash, down we go
+          if (g.lift === 0 && dogCenter > o.x + 12 && dogCenter < o.x + o.w - 12) {
+            startTrans("toWater");
+            return;
+          }
+          continue;
+        }
         if (o.kind === "hole") {
           // Must crawl through the gap under the fence
           if (top > HOLE_GAP + 1 && bottom < HOLE_TOP) return crash();
@@ -954,8 +1324,77 @@ export function DogRun() {
       }
     };
 
+    const drawWater = (w: number, h: number) => {
+      const breed = BREEDS[g.lead];
+      drawUnderwater(ctx, w, h, g.scroll, clock);
+      for (const o of g.waterObs) drawWaterOb(ctx, o, h, clock);
+      if (g.bankX !== null) drawSandbank(ctx, g.bankX, w, h);
+
+      // The quarry stays up top: the duck paddles along the surface,
+      // the squirrel rides a floating log
+      if (g.quarryX < w + 40) {
+        if (g.quarry === "duck") {
+          drawQuarry(ctx, "duck", g.quarryX, SURFACE_Y + 5, 1, clock, 0);
+        } else {
+          ellipse(ctx, g.quarryX, SURFACE_Y + 1, 14, 3.5, "#8B5A2B");
+          ellipse(ctx, g.quarryX + 12, SURFACE_Y + 1, 2.5, 3, "#C49A6C");
+          drawQuarry(ctx, "squirrel", g.quarryX, SURFACE_Y - 2, 1, clock, 0);
+        }
+      }
+
+      // Friends swim up after a miss
+      g.followers.forEach((f, i) => {
+        const arrived = f.x >= f.targetX;
+        drawDog(ctx, f.breed, f.x, g.swimY + (i % 2 ? -6 : 6), 1, clock * (arrived ? 5 : 10) + f.phase, 0, "swim");
+      });
+
+      // The chaser, tilting with its stroke
+      ctx.save();
+      ctx.translate(g.leadX, g.swimY);
+      ctx.rotate(g.crashed ? 0 : Math.max(-0.35, Math.min(0.35, g.swimVy * 0.0018)));
+      drawDog(ctx, breed, 0, 0, 1, clock * 10, 0, g.crashed ? "sad" : "swim");
+      ctx.restore();
+    };
+
+    /** Iris close/open over the scene while switching levels, plus a splash. */
+    const drawTransOverlay = (w: number, h: number) => {
+      const tr = g.trans;
+      if (!tr) return;
+      const T = clock - tr.start;
+      const gy = h - GROUND_PAD;
+      const maxR = Math.hypot(w, h);
+      const cx = g.leadX + 4;
+      const onLand = g.level === "land";
+      const cy = onLand ? gy - 15 : g.swimY - 12;
+      const r =
+        T < 0.45
+          ? lerp(maxR, 0, easeInOut(clamp01(T / 0.45)))
+          : lerp(0, maxR, easeInOut(clamp01((T - 0.45) / 0.45)));
+
+      if (tr.kind === "toWater" && T < 0.45) {
+        // Splash
+        for (let i = 0; i < 7; i++) {
+          const a = Math.PI + (i / 6) * Math.PI;
+          const d = 6 + T * 90;
+          ellipse(ctx, cx + Math.cos(a) * d, gy - 2 + Math.sin(a) * d * 0.8 + T * T * 120, 2, 2.6, "#79B1DE");
+        }
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.arc(cx, cy, Math.max(0.1, r), 0, Math.PI * 2);
+      ctx.fillStyle = "#0E1B2B";
+      ctx.fill("evenodd");
+      ctx.restore();
+    };
+
     const drawGame = (w: number, h: number) => {
       const gy = h - GROUND_PAD;
+      const breed = BREEDS[g.lead];
+      if (g.level === "water") {
+        drawWater(w, h);
+      } else {
       drawScenery(ctx, w, h, gy, g.scroll);
 
       for (const o of g.obstacles) drawObstacle(ctx, o, gy);
@@ -976,13 +1415,14 @@ export function DogRun() {
       }
 
       // The chaser
-      const breed = BREEDS[g.lead];
       let pose: Pose = "run";
       if (g.crashed) pose = g.lift > 0 ? "air" : "sad";
       else if (g.lift > 0) pose = "air";
       else if (isCrawling()) pose = "crawl";
       const phase = clock * (g.speed / 26);
       drawDog(ctx, breed, g.leadX, gy, 1, phase, g.lift, pose);
+      }
+      if (g.trans) drawTransOverlay(w, h);
 
       // HUD
       ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -1011,12 +1451,18 @@ export function DogRun() {
         );
       } else if (clock < g.hintUntil) {
         ctx.fillStyle = "#52525B";
+        const water = g.level === "water";
+        ctx.fillStyle = water ? "#1E3A52" : "#52525B";
         ctx.fillText(
-          isTouchRef.current
-            ? "Tap to jump · swipe down to crawl"
-            : "Space or ↑ to jump · ↓ to crawl · Esc to exit",
+          water
+            ? isTouchRef.current
+              ? "Underwater! Tap to swim up · swipe down to dive"
+              : "Underwater! Space or ↑ to swim up · ↓ to dive"
+            : isTouchRef.current
+              ? "Tap to jump · swipe down to crawl"
+              : "Space or ↑ to jump · ↓ to crawl · Esc to exit",
           w / 2,
-          40
+          water ? 48 : 40
         );
       }
     };
@@ -1196,7 +1642,7 @@ export function DogRun() {
         } else if (g.mode === "intro") {
           drawIntro(w, h);
         } else {
-          updateGame(dt, w);
+          updateGame(dt, w, h);
           drawGame(w, h);
         }
       }

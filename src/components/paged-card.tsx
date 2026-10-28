@@ -147,7 +147,8 @@ export function PagedCard({
       {bodyHeight === "auto" ? (
         // Stack every page in one grid cell: the cell takes the tallest page's height,
         // and only the current page is visible.
-        <div className="grid">
+        // -mb-px: a full page's last item line merges with the line above the dots
+        <div className="grid -mb-px">
           {pages.map((p, i) => (
             <div
               key={i}
@@ -161,7 +162,7 @@ export function PagedCard({
       ) : (
         <div
           key={page}
-          className="overflow-y-auto overscroll-contain"
+          className="overflow-y-auto overscroll-contain -mb-px"
           style={{ height: bodyHeight }}
         >
           {current.content}

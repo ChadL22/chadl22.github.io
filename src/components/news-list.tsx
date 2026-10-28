@@ -46,7 +46,7 @@ export function NewsList({ items }: { items: News[] }) {
   const pages: CardPage[] = groups.map((g) => ({
     label: g.year,
     content: (
-      <ul className="divide-y divide-zinc-200">
+      <ul className="[&>*]:border-b [&>*]:border-zinc-200">
         {g.items.map((news, i) => (
           <NewsRow key={i} news={news} />
         ))}

@@ -81,7 +81,7 @@ export default function Home() {
                           ).map((list) => ({
                             label: list.every((e) => e.date) ? "Current" : "Previous",
                             content: (
-                              <div className="divide-y divide-zinc-200">
+                              <div className="[&>*]:border-b [&>*]:border-zinc-200">
                                 {list.map((experience, index) => (
                                   <ExperienceEntry key={index} experience={experience} />
                                 ))}
@@ -102,7 +102,11 @@ export default function Home() {
                           bodyHeight="auto"
                           pages={portfolioData.map((portfolio, index) => ({
                             label: `${index + 1} of ${portfolioData.length}`,
-                            content: <PortfolioEntry portfolio={portfolio} />,
+                            content: (
+                              <div className="border-b border-zinc-200">
+                                <PortfolioEntry portfolio={portfolio} />
+                              </div>
+                            ),
                           }))}
                         />
                       </SectionCard>

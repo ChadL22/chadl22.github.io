@@ -145,6 +145,9 @@ const JUMP_V = 560; // px/s → ~87px jump
 const START_SPEED = 320; // px/s
 const MAX_SPEED = 720;
 const LEAD_X = 140;
+// On narrow screens the stage is laid out at least this wide, then scaled down to fit:
+// smaller dogs and obstacles, and more room to see what's coming.
+const MIN_STAGE_W = 640;
 const BEST_KEY = "dogrun-best";
 
 // Tire geometry (heights above the ground)
@@ -918,6 +921,8 @@ export function DogRun() {
     let raf = 0;
     let last = performance.now();
     let clock = 0;
+    let vs = 1; // stage scale (below 1 on narrow screens)
+    let viewW = Math.max(canvas.clientWidth, MIN_STAGE_W); // stage width in game units
 
     const setGameMode = (m: Mode) => {
       g.mode = m;
@@ -937,7 +942,7 @@ export function DogRun() {
       g.crashed = false;
       g.followers = [];
       g.quarry = quarry ?? (Math.random() < 0.5 ? "squirrel" : "duck");
-      g.quarryX = quarryX ?? canvas.clientWidth + 30; // otherwise runs in from the right
+      g.quarryX = quarryX ?? viewW + 30; // otherwise runs in from the right
       g.hintUntil = clock + 2.6;
       g.scroll = 0;
       g.intro = null;
@@ -968,7 +973,7 @@ export function DogRun() {
         quarry: Math.random() < 0.5 ? "squirrel" : "duck",
         quarryX: 0,
         // Settle near the landing spot, leaving room ahead for the chase
-        leadX: Math.max(100, Math.min(g.ambientBallX, canvas.clientWidth - 300)),
+        leadX: Math.max(100, Math.min(g.ambientBallX, viewW - 300)),
         lead: ordered[0].i,
         dir: g.ambientDir,
         dogs: ordered.map((d) => ({ breed: d.breed, x0: d.x })),
@@ -1099,15 +1104,24 @@ export function DogRun() {
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const w = canvas.clientWidth;
+      const cssW = canvas.clientWidth;
+      vs = Math.min(1, cssW / MIN_STAGE_W);
+      const w = cssW / vs; // stage width in game units
+      viewW = w;
       const h = g.mode === "ambient" ? AMBIENT_H : GAME_H;
-      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
-        canvas.width = Math.round(w * dpr);
-        canvas.height = Math.round(h * dpr);
+      const cssH = Math.round(h * vs);
+      if (canvas.style.height !== `${cssH}px`) canvas.style.height = `${cssH}px`;
+      if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+        canvas.width = Math.round(cssW * dpr);
+        canvas.height = Math.round(cssH * dpr);
       }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.setTransform(dpr * vs, 0, 0, dpr * vs, 0, 0);
       return { w, h };
     };
+
+    // Text keeps a readable on-screen size even when the stage is scaled down
+    const font = (px: number, family = "ui-sans-serif, system-ui, sans-serif", weight = "") =>
+      `${weight ? weight + " " : ""}${px / vs}px ${family}`;
 
     const ground = (w: number, gy: number, color: string) => {
       ctx.strokeStyle = color;
@@ -1123,7 +1137,7 @@ export function DogRun() {
       const gy = LINE_Y;
       ground(w, gy, PARTITION_COLOR); // the page partition doubles as the dogs' ground
 
-      const t = reduceMotion ? 3 : clock;
+      const t = clock;
       const margin = 60;
       const travel = Math.max(60, w - margin * 2);
       const u = t * 70;
@@ -1133,7 +1147,7 @@ export function DogRun() {
       // it turns first and the pack follows it around.
       const ball = bounce(u + 80, travel);
       const ballX = margin + ball.pos;
-      const ballLift = reduceMotion ? 0 : 16 * Math.abs(Math.sin(t * 7));
+      const ballLift = 16 * Math.abs(Math.sin(t * 7));
       drawBall(ctx, ballX, gy - ballLift, t);
       g.ambientBallX = ballX;
 
@@ -1148,8 +1162,8 @@ export function DogRun() {
       g.ambientDogs = dogs.map((d) => ({ breed: d.breed, i: d.i, x: d.x }));
       g.ambientDir = pack.dir;
       for (const d of dogs) {
-        const lift = reduceMotion ? 0 : 2 * Math.abs(Math.sin(d.phase));
-        drawDog(ctx, d.breed, d.x, gy, pack.dir, d.phase, lift, reduceMotion ? "stand" : "run");
+        const lift = 2 * Math.abs(Math.sin(d.phase));
+        drawDog(ctx, d.breed, d.x, gy, pack.dir, d.phase, lift, "run");
       }
     };
 
@@ -1425,29 +1439,29 @@ export function DogRun() {
       if (g.trans) drawTransOverlay(w, h);
 
       // HUD
-      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
+      ctx.font = font(12, "ui-monospace, SFMono-Regular, Menlo, monospace");
       ctx.fillStyle = "#3F3F46";
       ctx.textAlign = "right";
       const pad = (n: number) => String(n).padStart(5, "0");
-      ctx.fillText(`HI ${pad(g.best)}  ${pad(Math.floor(g.score))}`, w - 12, 16);
+      ctx.fillText(`HI ${pad(g.best)}  ${pad(Math.floor(g.score))}`, w - 12 / vs, 16 / vs);
       ctx.textAlign = "left";
-      ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
-      ctx.fillText(`${SHORT_NAMES[breed]} & ${QUARRY_NAMES[g.quarry]}`, 12, 16);
+      ctx.font = font(12);
+      ctx.fillText(`${SHORT_NAMES[breed]} & ${QUARRY_NAMES[g.quarry]}`, 12 / vs, 16 / vs);
 
       ctx.textAlign = "center";
-      ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
+      ctx.font = font(12);
       if (g.mode === "over") {
         ctx.fillStyle = "#27272A";
-        ctx.font = "13px ui-sans-serif, system-ui, sans-serif";
-        ctx.fillText(`The ${g.quarry} got away!`, w / 2, 40);
+        ctx.font = font(13);
+        ctx.fillText(`The ${g.quarry} got away!`, w / 2, 40 / vs);
         ctx.fillStyle = "#52525B";
-        ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
+        ctx.font = font(12);
         ctx.fillText(
           isTouchRef.current
             ? "Tap to give the next dog a turn"
             : "Space to give the next dog a turn · Esc to exit",
           w / 2,
-          58
+          58 / vs
         );
       } else if (clock < g.hintUntil) {
         ctx.fillStyle = "#52525B";
@@ -1462,7 +1476,7 @@ export function DogRun() {
               ? "Tap to jump · swipe down to crawl"
               : "Space or ↑ to jump · ↓ to crawl · Esc to exit",
           w / 2,
-          water ? 48 : 40
+          (water ? 48 : 40) / vs
         );
       }
     };
@@ -1620,7 +1634,7 @@ export function DogRun() {
         // The chaser spots the quarry
         if (i === 0 && T > revealAt && T < revealAt + 0.6) {
           ctx.fillStyle = "#B45309";
-          ctx.font = "bold 14px ui-sans-serif, system-ui, sans-serif";
+          ctx.font = font(14, undefined, "bold");
           ctx.textAlign = "center";
           ctx.fillText("!", x + facing * 16, y - 42);
         }
@@ -1665,7 +1679,8 @@ export function DogRun() {
       <canvas
         ref={canvasRef}
         className={`block w-full select-none ${mode === "ambient" ? "touch-manipulation" : "touch-none"}`}
-        style={{ height: mode === "ambient" ? AMBIENT_H : GAME_H }}
+        // Initial height only; the animation loop sizes it (scaled down on narrow screens)
+        style={{ height: AMBIENT_H }}
         role="img"
         aria-label="A chocolate lab, a red merle Australian shepherd and a brown roan English springer spaniel chasing a squirrel or a duck. Press Space at the bottom of the page to play a chasing game."
       />

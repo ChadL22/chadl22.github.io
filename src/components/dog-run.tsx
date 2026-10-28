@@ -577,7 +577,7 @@ function makeObstacle(kind: ObKind, x: number): Obstacle {
 
 const SURFACE_Y = 30; // water surface (canvas y)
 const FLOOR_PAD = 14; // sand floor height at the bottom
-const WATER_STRETCH = 2600; // px swum before the sandbank appears
+const WATER_STRETCH = 1800; // px swum before the sandbank appears (about 8 seconds)
 const STROKE_V = -150; // one paddle stroke (px/s, upward)
 const SINK = 300; // px/s² drift down between strokes
 const MAX_SINK = 190;
@@ -600,20 +600,20 @@ function makeWaterOb(kind: WaterKind, x: number, h: number): WaterOb {
     return {
       kind,
       x,
-      y: SURFACE_Y + 22 + Math.random() * (floorY - SURFACE_Y - 38),
+      y: SURFACE_Y + 30 + Math.random() * (floorY - SURFACE_Y - 54),
       w: 20,
       h: 9,
-      speed: 40 + Math.random() * 90,
+      speed: 15 + Math.random() * 45,
       wiggle: Math.random() * 6,
       color: colors[Math.floor(Math.random() * colors.length)],
     };
   }
   if (kind === "kelp") {
     // Seaweed growing up from the floor
-    return { kind, x, y: 0, w: 12, h: 42 + Math.random() * 42, speed: 0, wiggle: Math.random() * 6, color: "#3E8E5A" };
+    return { kind, x, y: 0, w: 12, h: 32 + Math.random() * 32, speed: 0, wiggle: Math.random() * 6, color: "#3E8E5A" };
   }
   // Moss hanging down from the surface
-  return { kind, x, y: 0, w: 16, h: 30 + Math.random() * 30, speed: 0, wiggle: Math.random() * 6, color: "#5C7A3A" };
+  return { kind, x, y: 0, w: 16, h: 22 + Math.random() * 24, speed: 0, wiggle: Math.random() * 6, color: "#5C7A3A" };
 }
 
 function drawWaterOb(ctx: CanvasRenderingContext2D, o: WaterOb, h: number, t: number) {
@@ -667,7 +667,7 @@ function drawWaterOb(ctx: CanvasRenderingContext2D, o: WaterOb, h: number, t: nu
 /** Collision box of a water hazard (slightly forgiving). */
 function waterObBox(o: WaterOb, h: number) {
   const floorY = h - FLOOR_PAD;
-  if (o.kind === "fish") return { l: o.x + 2, r: o.x + o.w + 2, t: o.y - o.h / 2 + 1, b: o.y + o.h / 2 - 1 };
+  if (o.kind === "fish") return { l: o.x + 3, r: o.x + o.w, t: o.y - o.h / 2 + 2, b: o.y + o.h / 2 - 2 };
   if (o.kind === "kelp") return { l: o.x + 2, r: o.x + o.w - 1, t: floorY - o.h + 4, b: floorY };
   return { l: o.x + 1, r: o.x + o.w - 1, t: SURFACE_Y, b: SURFACE_Y + o.h * 0.85 };
 }
@@ -1208,7 +1208,7 @@ export function DogRun() {
         g.swimVy = Math.min(0, g.swimVy);
       }
 
-      const ws = g.speed * 0.7; // slower underwater
+      const ws = Math.min(g.speed, 500) * 0.6; // slower, and capped, underwater
       g.speed = Math.min(MAX_SPEED, g.speed + 4 * dt);
       g.score += (ws * dt) / 10;
       g.scroll += ws * dt;
@@ -1223,10 +1223,10 @@ export function DogRun() {
 
       if (g.waterDist < WATER_STRETCH) {
         const lastOb = g.waterObs[g.waterObs.length - 1];
-        const gap = ws * (0.55 + Math.random() * 0.6);
+        const gap = ws * (1.0 + Math.random() * 0.6); // about 1–1.6 s between hazards
         if (!lastOb || lastOb.x < w - gap) {
           const r = Math.random();
-          const kind: WaterKind = r < 0.5 ? "fish" : r < 0.75 ? "kelp" : "moss";
+          const kind: WaterKind = r < 0.4 ? "fish" : r < 0.7 ? "kelp" : "moss";
           g.waterObs.push(makeWaterOb(kind, w + 10, h));
         }
       } else if (g.bankX === null) {
@@ -1242,10 +1242,11 @@ export function DogRun() {
       }
 
       // Collision: the swimming dog against fish, kelp and moss
-      const l = g.leadX - 14;
-      const r = g.leadX + 22;
-      const t = g.swimY - 24;
-      const b = g.swimY - 4;
+      // A little smaller than the drawing, so near misses count as misses
+      const l = g.leadX - 10;
+      const r = g.leadX + 18;
+      const t = g.swimY - 21;
+      const b = g.swimY - 6;
       for (const o of g.waterObs) {
         const box = waterObBox(o, h);
         if (r > box.l && l < box.r && b > box.t && t < box.b) return crash();

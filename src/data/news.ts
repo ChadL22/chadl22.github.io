@@ -8,8 +8,8 @@ export interface News {
 export const newsData: News[] = [
   {
     date: "2026",
-    title: "Phronesis. The Tech Policy Library.",
-    description: "Phronesis has been rebranded as The Tech Policy Library: a curated research library for technologists, legal professionals, and policymakers exploring the intersection of technology, law, and policy. We provide policymakers, technologists, and legal professionals with free access to primary and secondary technology policy resources, each hand-selected for relevance and quality. The library is public and continues to grow in depth and breadth.",
+    title: "Launching Phronesis Research",
+    description: "Phronesis is a curated research library for technologists, legal professionals, and policymakers exploring topics at the intersection of technology, law, and policy. Through it we provide free access to primary and secondary sources on technology policy, each hand-selected for relevance and quality.",
     link: "https://phronesisresearch.org",
   },
   {

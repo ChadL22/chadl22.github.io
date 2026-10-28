@@ -349,6 +349,22 @@ function drawDog(
   ctx.restore();
 }
 
+/** A tennis ball; y is its bottom. */
+function drawBall(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+  ellipse(ctx, x, y - 4, 4, 4, "#D4E04A");
+  ctx.save();
+  ctx.translate(x, y - 4);
+  ctx.rotate(t * 8);
+  ctx.strokeStyle = "#F8F8F0";
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.arc(-4.5, 0, 3.6, -0.9, 0.9);
+  ctx.moveTo(4.5 - 3.6 * Math.cos(0.9), -3.6 * Math.sin(0.9));
+  ctx.arc(4.5, 0, 3.6, Math.PI - 0.9, Math.PI + 0.9, true);
+  ctx.stroke();
+  ctx.restore();
+}
+
 /** A fleeing squirrel or duck, facing its direction of travel. */
 function drawQuarry(
   ctx: CanvasRenderingContext2D,
@@ -546,13 +562,18 @@ interface Game {
   // Where the pack is in the idle chase (used to start the intro from the right spot)
   ambientDogs: { breed: Breed; i: number; x: number }[];
   ambientDir: 1 | -1;
+  ambientBallX: number;
   intro: Intro | null;
+  leadX: number; // where the chaser runs during play
 }
 
 /** The partition breaks and the dogs slide down into the game. */
 interface Intro {
   start: number;
   crackX: number;
+  quarry: Quarry; // found in the park
+  quarryX: number;
+  leadX: number; // where the chaser settles (near where it lands)
   lead: number;
   dir: 1 | -1;
   dogs: { breed: Breed; x0: number }[]; // chaser first
@@ -618,7 +639,9 @@ export function DogRun() {
     scroll: 0,
     ambientDogs: [],
     ambientDir: 1,
+    ambientBallX: 0,
     intro: null,
+    leadX: LEAD_X,
   });
 
   useEffect(() => {
@@ -651,8 +674,9 @@ export function DogRun() {
       setMode(m);
     };
 
-    const startGame = (leadIndex: number) => {
+    const startGame = (leadIndex: number, quarry?: Quarry, quarryX?: number, leadX?: number) => {
       g.lead = leadIndex;
+      g.leadX = leadX ?? LEAD_X;
       g.speed = START_SPEED;
       g.score = 0;
       g.obstacles = [];
@@ -662,8 +686,8 @@ export function DogRun() {
       g.crawlUntil = 0;
       g.crashed = false;
       g.followers = [];
-      g.quarry = Math.random() < 0.5 ? "squirrel" : "duck";
-      g.quarryX = canvas.clientWidth + 30; // runs in from the right
+      g.quarry = quarry ?? (Math.random() < 0.5 ? "squirrel" : "duck");
+      g.quarryX = quarryX ?? canvas.clientWidth + 30; // otherwise runs in from the right
       g.hintUntil = clock + 2.6;
       g.scroll = 0;
       g.intro = null;
@@ -685,7 +709,11 @@ export function DogRun() {
       const ordered = [...g.ambientDogs].reverse(); // front dog first
       g.intro = {
         start: clock,
-        crackX: ordered[0].x + g.ambientDir * 34,
+        crackX: g.ambientBallX, // the ball's bounce cracks the line
+        quarry: Math.random() < 0.5 ? "squirrel" : "duck",
+        quarryX: 0,
+        // Settle near the landing spot, leaving room ahead for the chase
+        leadX: Math.max(100, Math.min(g.ambientBallX, canvas.clientWidth - 300)),
         lead: ordered[0].i,
         dir: g.ambientDir,
         dogs: ordered.map((d) => ({ breed: d.breed, x0: d.x })),
@@ -710,9 +738,9 @@ export function DogRun() {
       // The other two run up from behind to play with the sad chaser
       g.followers = [1, 2].map((i) => ({
         breed: BREEDS[(g.lead + i) % 3],
-        // They come back from where they dashed off (the right) and stop beside their friend
-        x: canvas.clientWidth + 40 + i * 50,
-        targetX: LEAD_X + 30 + 46 * i,
+        // They come back from where they wandered off (behind) and stop beside their friend
+        x: -40 - i * 50,
+        targetX: g.leadX - 46 * i,
         phase: i * 1.7,
       }));
       setGameMode("over");
@@ -810,14 +838,13 @@ export function DogRun() {
       const u = t * 70;
       const pack = bounce(u, travel);
 
-      // The quarry runs 100px ahead along the same back-and-forth path, so it
-      // turns first and the pack follows it around.
-      const lead = 100;
-      const q = bounce(u + lead, travel);
-      const quarry: Quarry = Math.floor((u + lead) / travel) % 2 === 0 ? "squirrel" : "duck";
-      const qLift =
-        quarry === "squirrel" ? 6 * Math.abs(Math.sin(t * 9)) : 10 + 3 * Math.sin(t * 6);
-      drawQuarry(ctx, quarry, margin + q.pos, gy, q.dir, t, reduceMotion ? 0 : qLift);
+      // A tennis ball bounces 80px ahead along the same back-and-forth path, so
+      // it turns first and the pack follows it around.
+      const ball = bounce(u + 80, travel);
+      const ballX = margin + ball.pos;
+      const ballLift = reduceMotion ? 0 : 16 * Math.abs(Math.sin(t * 7));
+      drawBall(ctx, ballX, gy - ballLift, t);
+      g.ambientBallX = ballX;
 
       const dogs = BREEDS.map((breed, i) => ({
         i,
@@ -857,7 +884,7 @@ export function DogRun() {
         // Quarry escapes; friends run up
         g.quarryX += 300 * dt;
         for (const f of g.followers) {
-          if (f.x > f.targetX) f.x = Math.max(f.targetX, f.x - 320 * dt);
+          if (f.x < f.targetX) f.x = Math.min(f.targetX, f.x + 320 * dt);
         }
         return;
       }
@@ -866,10 +893,10 @@ export function DogRun() {
       g.score += (g.speed * dt) / 10;
       g.scroll += g.speed * dt;
       // Quarry runs in from the right, then keeps just ahead of the chaser
-      const qTarget = LEAD_X + 110 + 8 * Math.sin(clock * 1.3);
+      const qTarget = g.leadX + 110 + 8 * Math.sin(clock * 1.3);
       g.quarryX += (qTarget - g.quarryX) * Math.min(1, dt * 2.5);
 
-      const dogCenter = LEAD_X + 4;
+      const dogCenter = g.leadX + 4;
       for (const o of g.obstacles) {
         const prevCenter = o.x + o.w / 2;
         o.x -= g.speed * dt;
@@ -897,8 +924,8 @@ export function DogRun() {
       // Collision with the chaser
       const crawling = isCrawling();
       const height = crawling ? 20 : g.lift > 0 ? 26 : 30;
-      const left = LEAD_X - 16;
-      const right = LEAD_X + 24;
+      const left = g.leadX - 16;
+      const right = g.leadX + 24;
       const bottom = g.lift;
       const top = g.lift + height;
       for (const o of g.obstacles) {
@@ -936,8 +963,8 @@ export function DogRun() {
 
       // Friends who ran up after the miss
       for (const f of g.followers) {
-        const arrived = f.x <= f.targetX;
-        drawDog(ctx, f.breed, f.x, gy, -1, clock * 13 + f.phase, arrived ? 0 : 2 * Math.abs(Math.sin(clock * 13 + f.phase)), arrived ? "stand" : "run");
+        const arrived = f.x >= f.targetX;
+        drawDog(ctx, f.breed, f.x, gy, 1, clock * 13 + f.phase, arrived ? 0 : 2 * Math.abs(Math.sin(clock * 13 + f.phase)), arrived ? "stand" : "run");
       }
 
       // The chaser
@@ -947,7 +974,7 @@ export function DogRun() {
       else if (g.lift > 0) pose = "air";
       else if (isCrawling()) pose = "crawl";
       const phase = clock * (g.speed / 26);
-      drawDog(ctx, breed, LEAD_X, gy, 1, phase, g.lift, pose);
+      drawDog(ctx, breed, g.leadX, gy, 1, phase, g.lift, pose);
 
       // HUD
       ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -987,12 +1014,17 @@ export function DogRun() {
     };
 
     /**
-     * Intro, about 2 seconds:
-     *   0.00–0.45  the partition cracks under the front dog and shakes
+     * Intro, about 2.3 seconds:
+     *   the ball's last bounce cracks the partition; it breaks open; the ball
+     *   drops down the hole; the dogs dive after it; the park opens out from
+     *   the hole; the ball rolls off and a squirrel or duck pops up and bolts.
+     *
+     *   0.00–0.45  the partition cracks under the ball and shakes
      *   0.45–0.75  it breaks open into two trapdoor flaps
      *   0.55–1.40  the dogs slide down through the gap, chaser first
      *   0.75–1.50  the park opens out from the hole (iris wipe)
-     *   then the chaser trots to its spot, the others run off, and play begins
+     *   1.30–2.30  the quarry pops up and bolts; the chaser trots to its spot,
+     *              the others dash off, and play begins
      */
     const drawIntro = (w: number, h: number) => {
       const it = g.intro;
@@ -1057,6 +1089,42 @@ export function DogRun() {
         ctx.restore();
       }
 
+      // The ball: a last few bounces, then down the hole, then it rolls away
+      const fallStart = 0.45;
+      const fallDrop = gy - 4 - (LINE_Y - 4);
+      const fallTime = Math.sqrt((2 * fallDrop) / 1400);
+      let bx = it.crackX;
+      let by: number;
+      if (T < fallStart) {
+        by = LINE_Y - 4 - 12 * Math.abs(Math.sin(T * 9)) * (1 - T / fallStart);
+      } else if (T < fallStart + fallTime) {
+        const tf = T - fallStart;
+        by = LINE_Y - 4 + 0.5 * 1400 * tf * tf;
+      } else {
+        // Bounces and rolls ahead to where the quarry is hiding
+        const tr = T - fallStart - fallTime;
+        bx = lerp(it.crackX, it.leadX + 100, easeOut(clamp01(tr / 0.5)));
+        by = gy - 4 - 22 * Math.abs(Math.sin(tr * 8)) * Math.exp(-tr * 3);
+      }
+      // Forgotten once the quarry shows up: fade it out before play starts
+      ctx.save();
+      ctx.globalAlpha = 1 - clamp01((T - 1.8) / 0.4);
+      drawBall(ctx, bx, by + 4, clock);
+      ctx.restore();
+
+      // The squirrel or duck pops up where the ball rolled, then bolts
+      const revealAt = 1.3;
+      const qx0 = it.leadX + 100;
+      let qx = qx0;
+      if (T > revealAt) {
+        const k = clamp01((T - revealAt) / 0.3);
+        const pop = Math.sin(Math.PI * k) * 18;
+        qx = qx0 + Math.max(0, T - revealAt - 0.3) * 160;
+        const air = it.quarry === "duck" ? 26 * clamp01((T - revealAt - 0.2) / 0.4) : 0;
+        drawQuarry(ctx, it.quarry, qx, gy, 1, clock, pop + air);
+      }
+      it.quarryX = qx;
+
       // Dogs slide down the flap into the hole, one after another
       it.dogs.forEach((d, i) => {
         const t0 = 0.55 + i * 0.14;
@@ -1083,22 +1151,28 @@ export function DogRun() {
           y = gy;
           pose = "run";
           if (i === 0) {
-            x = lerp(it.crackX, LEAD_X, easeInOut(k));
-            facing = LEAD_X >= it.crackX ? 1 : -1;
-            if (k >= 1) {
-              pose = "stand";
-              facing = 1;
-            }
-          } else {
-            // The other two dash off ahead (they'll be back if the chaser misses)
-            x = lerp(it.crackX + (i - 1) * 8, w + 80, k);
+            // The chaser settles facing the quarry
+            x = lerp(it.crackX - 8, it.leadX, easeInOut(k));
             facing = 1;
+            if (k >= 1) pose = "stand";
+          } else {
+            // The other two wander off behind (they'll be back if the chaser misses)
+            x = lerp(it.crackX + (i - 1) * 8, -80, k);
+            facing = -1;
           }
         }
         drawDog(ctx, d.breed, x, y, facing, phase, 0, pose);
+
+        // The chaser spots the quarry
+        if (i === 0 && T > revealAt && T < revealAt + 0.6) {
+          ctx.fillStyle = "#B45309";
+          ctx.font = "bold 14px ui-sans-serif, system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("!", x + facing * 16, y - 42);
+        }
       });
 
-      if (T > 2.05) startGame(it.lead);
+      if (T > 2.3) startGame(it.lead, it.quarry, it.quarryX, it.leadX);
     };
 
     const frame = (now: number) => {

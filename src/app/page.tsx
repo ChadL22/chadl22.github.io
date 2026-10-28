@@ -17,7 +17,7 @@ import { sectionOrder, Section } from "@/data/section-order";
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#FFFCF8]">
-      <div className="max-w-screen-lg mx-auto px-8 py-24">
+      <div className="max-w-screen-lg mx-auto px-5 sm:px-8 py-12 md:py-24">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
           {/* Left Column - Fixed Info */}
           <div className="col-span-12 md:col-span-4 space-y-12 mb-8 md:mb-0">
@@ -71,24 +71,24 @@ export default function Home() {
                   return (
                     experienceData.length > 0 && (
                       <SectionCard key={sectionName} id="experience" title="Experience" boxed={false}>
+                        {/* Three roles per page, current roles first */}
                         <PagedCard
                           ariaLabel="Experience"
-                          pages={[
-                            { label: "Current", list: experienceData.filter((e) => e.date) },
-                            { label: "Previous", list: experienceData.filter((e) => !e.date) },
-                          ]
-                            .filter((g) => g.list.length > 0)
-                            .map((g) => ({
-                              label: g.label,
-                              meta: `${g.list.length} ${g.list.length === 1 ? "role" : "roles"}`,
-                              content: (
-                                <div className="divide-y divide-zinc-200">
-                                  {g.list.map((experience, index) => (
-                                    <ExperienceEntry key={index} experience={experience} />
-                                  ))}
-                                </div>
-                              ),
-                            }))}
+                          bodyHeight="auto"
+                          pages={Array.from(
+                            { length: Math.ceil(experienceData.length / 3) },
+                            (_, p) => experienceData.slice(p * 3, p * 3 + 3)
+                          ).map((list, p, all) => ({
+                            label: list.every((e) => e.date) ? "Current" : "Previous",
+                            meta: `${p + 1} of ${all.length}`,
+                            content: (
+                              <div className="divide-y divide-zinc-200">
+                                {list.map((experience, index) => (
+                                  <ExperienceEntry key={index} experience={experience} />
+                                ))}
+                              </div>
+                            ),
+                          }))}
                         />
                       </SectionCard>
                     )

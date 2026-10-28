@@ -31,7 +31,6 @@ export const aboutMe: AboutMe = {
   imageUrl:
     "my-photo.png",
   //googleScholarUrl: "https://scholar.google.com/citations?user=bWtMl_MAAAAJ",
-  githubUsername: "ChadL22",
   twitterUsername: "sc_langa",
   //cvUrl: "https://",
   institutionUrl: "https://www.sas.com/",

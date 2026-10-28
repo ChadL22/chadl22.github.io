@@ -3,7 +3,7 @@ import { Education } from "@/data/education";
 export function EducationEntry({ education }: { education: Education }) {
   return (
     <div className="px-5 py-4">
-      <div className="flex items-baseline justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-0.5 sm:gap-4">
         <h3 className="font-serif text-base text-zinc-900 leading-snug">
           {education.institution}
         </h3>

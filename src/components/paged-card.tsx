@@ -23,11 +23,14 @@ export function PagedCard({
   ariaLabel,
   prevLabel = "Previous",
   nextLabel = "Next",
+  bodyHeight = PAGED_CARD_BODY_HEIGHT,
 }: {
   pages: CardPage[];
   ariaLabel: string;
   prevLabel?: string;
   nextLabel?: string;
+  // "auto" sizes the body to the tallest page so pages don't jump and nothing is left blank
+  bodyHeight?: string;
 }) {
   const [page, setPage] = useState(0);
   const start = useRef<{ x: number; y: number } | null>(null);
@@ -82,13 +85,29 @@ export function PagedCard({
         </div>
       ) : null}
 
-      <div
-        key={page}
-        className="overflow-y-auto overscroll-contain"
-        style={{ height: PAGED_CARD_BODY_HEIGHT }}
-      >
-        {current.content}
-      </div>
+      {bodyHeight === "auto" ? (
+        // Stack every page in one grid cell: the cell takes the tallest page's height,
+        // and only the current page is visible.
+        <div className="grid">
+          {pages.map((p, i) => (
+            <div
+              key={i}
+              className={`[grid-area:1/1] ${i === page ? "" : "invisible"}`}
+              aria-hidden={i !== page}
+            >
+              {p.content}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          key={page}
+          className="overflow-y-auto overscroll-contain"
+          style={{ height: bodyHeight }}
+        >
+          {current.content}
+        </div>
+      )}
 
       {pages.length > 1 && (
         <div className="flex items-center justify-center gap-1.5 py-2.5 border-t border-zinc-200">

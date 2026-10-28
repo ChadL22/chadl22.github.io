@@ -32,12 +32,6 @@ export const newsData: News[] = [
   },
   {
     date: "2025",
-    title: "A Beginner's Guide to Computational Modeling of Human Behavior",
-    description: "Created a GitHub guide to computational models of human behavior, with tips and resources to help newcomers get their bearings in this complex, interdisciplinary field.",
-    link: "https://github.com/ChadL22/A-Beginner-s-Guide-to-Computational-Models-of-Human-Behavior/tree/main?tab=readme-ov-file#resources",
-  },
-  {
-    date: "2025",
     title: "MIT AI Negotiation Competition",
     description: "Accepted to the prestigious MIT AI Negotiation Competition, focusing on interdisciplinary AI research.",
     link: "https://ide.mit.edu/events/mit-ai-negotiation-competition/",

@@ -16,7 +16,6 @@ export interface AboutMe {
   altName?: string;
   institutionUrl?: string;
   additionalRoles?: { title: string; institution: string; institutionUrl?: string }[];
-  createdProject?: { role: string; name: string; url: string };
 }
 
 export const aboutMe: AboutMe = {
@@ -34,11 +33,6 @@ export const aboutMe: AboutMe = {
   //googleScholarUrl: "https://scholar.google.com/citations?user=bWtMl_MAAAAJ",
   githubUsername: "ChadL22",
   twitterUsername: "sc_langa",
-  createdProject: {
-    role: "Founder",
-    name: "Phronesis, The Tech Policy Library",
-    url: "https://phronesisresearch.org",
-  },
   //cvUrl: "https://",
   institutionUrl: "https://www.sas.com/",
   additionalRoles: [
@@ -46,6 +40,11 @@ export const aboutMe: AboutMe = {
       title: "Co-Lead",
       institution: "University of Maryland Tech Policy Hub",
       institutionUrl: "https://techpolicyhub.org/",
+    },
+    {
+      title: "Founder",
+      institution: "Phronesis, The Tech Policy Library",
+      institutionUrl: "https://phronesisresearch.org",
     },
   ],
   // altName: "",

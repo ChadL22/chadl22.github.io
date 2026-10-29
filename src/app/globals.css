@@ -34,3 +34,26 @@ html.dog-game-active * {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Buttons never start a text selection, show the copy/share callout, or flash grey on tap */
+button,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* On touch screens a long press or slow swipe inside a carousel card selects the whole
+   card. The cards are for swiping and tapping, so text in them isn't selectable there;
+   links inside still open normally. Mouse users can still select text. */
+@media (pointer: coarse) {
+  .paged-card,
+  .paged-card * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}

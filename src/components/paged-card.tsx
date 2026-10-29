@@ -51,7 +51,7 @@ export function PagedCard({
 
   return (
     <div
-      className="rounded-2xl border border-zinc-200 bg-white/60 overflow-hidden overscroll-x-contain focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600/40"
+      className="paged-card rounded-2xl border border-zinc-200 bg-white/60 overflow-hidden overscroll-x-contain focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600/40"
       role="region"
       aria-roledescription="carousel"
       aria-label={ariaLabel}

@@ -8,6 +8,12 @@ export interface News {
 export const newsData: News[] = [
   {
     date: "2026",
+    title: "EAAMO 2026 Poster",
+    description: "Accepted poster at the ACM Conference on Equity and Access in Algorithms, Mechanisms, and Optimization.",
+    link: "https://techpolicyhub.org/research/#:~:text=%C3%97,or%20infer%20location",
+  },
+  {
+    date: "2026",
     title: "Launched Phronesis",
     description: "A nonprofit research library offering free access to hand-selected academic, legal, and technical resources on technology policy.",
     link: "https://phronesisresearch.org",

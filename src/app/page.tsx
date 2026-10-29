@@ -71,23 +71,25 @@ export default function Home() {
                   return (
                     experienceData.length > 0 && (
                       <SectionCard key={sectionName} id="experience" title="Experience" boxed={false}>
-                        {/* Three roles per page, current roles first */}
+                        {/* Current roles, then every past role on one page that scrolls */}
                         <PagedCard
                           ariaLabel="Experience"
-                          bodyHeight="auto"
-                          pages={Array.from(
-                            { length: Math.ceil(experienceData.length / 3) },
-                            (_, p) => experienceData.slice(p * 3, p * 3 + 3)
-                          ).map((list) => ({
-                            label: list.every((e) => e.date) ? "Current" : "Previous",
-                            content: (
-                              <div className="[&>*]:border-b [&>*]:border-zinc-200">
-                                {list.map((experience, index) => (
-                                  <ExperienceEntry key={index} experience={experience} />
-                                ))}
-                              </div>
-                            ),
-                          }))}
+                          bodyHeight="first"
+                          pages={[
+                            { label: "Current", list: experienceData.filter((e) => e.date) },
+                            { label: "Previous", list: experienceData.filter((e) => !e.date) },
+                          ]
+                            .filter((p) => p.list.length > 0)
+                            .map(({ label, list }) => ({
+                              label,
+                              content: (
+                                <div className="[&>*]:border-b [&>*]:border-zinc-200">
+                                  {list.map((experience, index) => (
+                                    <ExperienceEntry key={index} experience={experience} />
+                                  ))}
+                                </div>
+                              ),
+                            }))}
                         />
                       </SectionCard>
                     )

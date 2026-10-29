@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface CardPage {
@@ -29,7 +29,8 @@ export function PagedCard({
   ariaLabel: string;
   prevLabel?: string;
   nextLabel?: string;
-  // "auto" sizes the body to the tallest page so pages don't jump and nothing is left blank
+  // "auto" sizes the body to the tallest page so pages don't jump and nothing is left blank.
+  // "first" sizes it to the first page; longer pages scroll inside that height.
   bodyHeight?: string;
 }) {
   const [page, setPage] = useState(0);
@@ -144,7 +145,20 @@ export function PagedCard({
         </div>
       ) : null}
 
-      {bodyHeight === "auto" ? (
+      {bodyHeight === "first" ? (
+        // The first page stays in the flow (hidden when another page is showing) so it
+        // fixes the height; any other page is laid over it and scrolls if it's longer.
+        <div className="relative -mb-px">
+          <div className={page === 0 ? "" : "invisible"} aria-hidden={page !== 0}>
+            {pages[0].content}
+          </div>
+          {page !== 0 && (
+            <ScrollBody key={page} className="absolute inset-0">
+              {current.content}
+            </ScrollBody>
+          )}
+        </div>
+      ) : bodyHeight === "auto" ? (
         // Stack every page in one grid cell: the cell takes the tallest page's height,
         // and only the current page is visible.
         // -mb-px: a full page's last item line merges with the line above the dots
@@ -186,6 +200,28 @@ export function PagedCard({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Vertical scroller that fades its bottom edge while there's more to scroll to. */
+function ScrollBody({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  const update = () => {
+    const el = ref.current;
+    if (el) setMore(el.scrollTop + el.clientHeight < el.scrollHeight - 2);
+  };
+  useEffect(update, []);
+  const fade = "linear-gradient(to bottom, black calc(100% - 2.5rem), transparent)";
+  return (
+    <div
+      ref={ref}
+      onScroll={update}
+      className={`overflow-y-auto overscroll-contain ${className}`}
+      style={more ? { maskImage: fade, WebkitMaskImage: fade } : undefined}
+    >
+      {children}
     </div>
   );
 }

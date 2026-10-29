@@ -905,6 +905,16 @@ export function DogRun() {
     game.current.best = readBest();
   }, []);
 
+  // While a game is on, nothing else on the page can be selected or highlighted:
+  // a stray touch near the canvas otherwise selects nearby page text mid-run.
+  useEffect(() => {
+    if (mode === "ambient") return;
+    const root = document.documentElement;
+    root.classList.add("dog-game-active");
+    window.getSelection()?.removeAllRanges();
+    return () => root.classList.remove("dog-game-active");
+  }, [mode]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1104,10 +1114,23 @@ export function DogRun() {
         g.crawlHeld = false;
       }
     };
+    // On phones, holding a finger down (crouch) otherwise starts a long-press:
+    // text selection, the magnifier and the copy/share callout. Swallow the raw
+    // touch events while a game is on; pointer events above still fire.
+    const blockTouch = (e: TouchEvent) => {
+      if (g.mode !== "ambient" && e.cancelable) e.preventDefault();
+    };
+    const blockMenu = (e: Event) => {
+      if (g.mode !== "ambient") e.preventDefault();
+    };
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointerup", onPointerEnd);
     canvas.addEventListener("pointercancel", onPointerEnd);
     canvas.addEventListener("pointerleave", onPointerEnd);
+    canvas.addEventListener("touchstart", blockTouch, { passive: false });
+    canvas.addEventListener("touchmove", blockTouch, { passive: false });
+    canvas.addEventListener("touchend", blockTouch, { passive: false });
+    canvas.addEventListener("contextmenu", blockMenu);
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -1680,6 +1703,10 @@ export function DogRun() {
       canvas.removeEventListener("pointerup", onPointerEnd);
       canvas.removeEventListener("pointercancel", onPointerEnd);
       canvas.removeEventListener("pointerleave", onPointerEnd);
+      canvas.removeEventListener("touchstart", blockTouch);
+      canvas.removeEventListener("touchmove", blockTouch);
+      canvas.removeEventListener("touchend", blockTouch);
+      canvas.removeEventListener("contextmenu", blockMenu);
       io.disconnect();
     };
   }, []);
@@ -1689,8 +1716,9 @@ export function DogRun() {
       <canvas
         ref={canvasRef}
         className={`block w-full select-none ${mode === "ambient" ? "touch-manipulation" : "touch-none"}`}
-        // Initial height only; the animation loop sizes it (scaled down on narrow screens)
-        style={{ height: AMBIENT_H }}
+        // Initial height only; the animation loop sizes it (scaled down on narrow screens).
+        // No grey tap flash or long-press callout on iOS/Android.
+        style={{ height: AMBIENT_H, WebkitTapHighlightColor: "transparent", WebkitTouchCallout: "none" }}
         role="img"
         aria-label="A chocolate lab, a red merle Australian shepherd and a brown roan English springer spaniel chasing a squirrel or a duck. Press Space at the bottom of the page to play a chasing game."
       />

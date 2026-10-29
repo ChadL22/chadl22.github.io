@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Github, Linkedin, Twitter, ArrowUpRight, GraduationCap } from "lucide-react";
+import { Github, Linkedin, Twitter, ArrowUpRight, GraduationCap, Newspaper } from "lucide-react";
 import { AboutMe } from "@/data/aboutme";
 import { EmailIconLink } from "@/components/email-icon-link";
 
@@ -9,6 +9,10 @@ interface ProfileSectionProps {
 
 const iconLink =
   "inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white/60 text-zinc-600 hover:text-zinc-900 hover:border-amber-600 transition-colors duration-300";
+
+// Same circle styling, stretched into a pill with a word so it can't be mistaken for another icon
+const labeledLink =
+  "inline-flex h-9 items-center gap-1.5 rounded-full border border-zinc-200 bg-white/60 pl-3 pr-3.5 text-xs font-medium tracking-wide text-zinc-600 hover:text-zinc-900 hover:border-amber-600 transition-colors duration-300";
 
 export function ProfileSection({ aboutMe }: ProfileSectionProps) {
   if (!aboutMe) {
@@ -69,6 +73,18 @@ export function ProfileSection({ aboutMe }: ProfileSectionProps) {
           className={iconLink}
         >
           <Linkedin size={18} />
+        </a>
+      )}
+      {aboutMe.newsletterUrl && (
+        <a
+          href={aboutMe.newsletterUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Subscribe to the monthly newsletter"
+          className={labeledLink}
+        >
+          <Newspaper size={16} aria-hidden="true" />
+          Newsletter
         </a>
       )}
     </>

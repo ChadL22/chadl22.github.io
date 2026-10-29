@@ -286,6 +286,10 @@ content:
       - name: twitterUsername
         label: Twitter username
         type: string
+      - name: newsletterUrl
+        label: Newsletter sign-up link
+        type: string
+        description: 'Shows a "Newsletter" button next to the email and Twitter icons. Leave blank to hide it.'
       - name: githubUsername
         label: GitHub username
         type: string

@@ -12,6 +12,7 @@ export interface AboutMe {
   cvUrl?: string;
   googleScholarUrl?: string;
   twitterUsername?: string;
+  newsletterUrl?: string; // Newsletter sign-up page; shows a "Newsletter" button
   githubUsername?: string;
   linkedinUsername?: string;
   funDescription?: string; // Gets placed in the left sidebar

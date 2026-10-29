@@ -20,9 +20,63 @@ export function ProfileSection({ aboutMe }: ProfileSectionProps) {
     ...(aboutMe.additionalRoles ?? []),
   ];
 
+  const contactIcons = (
+    <>
+      <EmailIconLink obfuscated={aboutMe.email} className={iconLink} />
+      {aboutMe.twitterUsername && (
+        <a
+          href={`https://twitter.com/${aboutMe.twitterUsername}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Twitter: @${aboutMe.twitterUsername}`}
+          title={`@${aboutMe.twitterUsername}`}
+          className={iconLink}
+        >
+          <Twitter size={18} />
+        </a>
+      )}
+      {aboutMe.googleScholarUrl && (
+        <a
+          href={aboutMe.googleScholarUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Google Scholar"
+          title="Google Scholar"
+          className={iconLink}
+        >
+          <GraduationCap size={18} />
+        </a>
+      )}
+      {aboutMe.githubUsername && (
+        <a
+          href={`https://github.com/${aboutMe.githubUsername}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="GitHub"
+          title="GitHub"
+          className={iconLink}
+        >
+          <Github size={18} />
+        </a>
+      )}
+      {aboutMe.linkedinUsername && (
+        <a
+          href={`https://www.linkedin.com/in/${aboutMe.linkedinUsername}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="LinkedIn"
+          title="LinkedIn"
+          className={iconLink}
+        >
+          <Linkedin size={18} />
+        </a>
+      )}
+    </>
+  );
+
   return (
     // Phones: headshot + icons on the left, name + roles on the right.
-    // Desktop: everything stacks in the left column.
+    // Desktop: headshot, name, roles, then icons, stacked in the left column.
     <div className="md:sticky top-12 flex flex-row md:flex-col gap-5 md:gap-8">
       <div className="w-[38%] max-w-[11rem] md:max-w-none md:w-full flex-shrink-0">
         {aboutMe.imageUrl && (
@@ -37,58 +91,8 @@ export function ProfileSection({ aboutMe }: ProfileSectionProps) {
           </div>
         )}
 
-        {/* Contact icons sit under the headshot */}
-        <div className="flex flex-wrap gap-2 mt-3">
-          <EmailIconLink obfuscated={aboutMe.email} className={iconLink} />
-          {aboutMe.twitterUsername && (
-            <a
-              href={`https://twitter.com/${aboutMe.twitterUsername}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Twitter: @${aboutMe.twitterUsername}`}
-              title={`@${aboutMe.twitterUsername}`}
-              className={iconLink}
-            >
-              <Twitter size={18} />
-            </a>
-          )}
-          {aboutMe.googleScholarUrl && (
-            <a
-              href={aboutMe.googleScholarUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Google Scholar"
-              title="Google Scholar"
-              className={iconLink}
-            >
-              <GraduationCap size={18} />
-            </a>
-          )}
-          {aboutMe.githubUsername && (
-            <a
-              href={`https://github.com/${aboutMe.githubUsername}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub"
-              title="GitHub"
-              className={iconLink}
-            >
-              <Github size={18} />
-            </a>
-          )}
-          {aboutMe.linkedinUsername && (
-            <a
-              href={`https://www.linkedin.com/in/${aboutMe.linkedinUsername}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="LinkedIn"
-              title="LinkedIn"
-              className={iconLink}
-            >
-              <Linkedin size={18} />
-            </a>
-          )}
-        </div>
+        {/* Phones: contact icons sit under the headshot */}
+        <div className="flex flex-wrap gap-2 mt-3 md:hidden">{contactIcons}</div>
       </div>
 
       <div className="flex-1 min-w-0">
@@ -124,6 +128,8 @@ export function ProfileSection({ aboutMe }: ProfileSectionProps) {
             </li>
           ))}
         </ul>
+        {/* Desktop: contact icons sit under the roles */}
+        <div className="hidden md:flex flex-wrap gap-2 mt-6">{contactIcons}</div>
         {aboutMe.cvUrl && (
           <a
             href={aboutMe.cvUrl}

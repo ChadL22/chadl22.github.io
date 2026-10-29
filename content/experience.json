@@ -1,0 +1,49 @@
+{
+  "items": [
+    {
+      "published": true,
+      "date": "2026 – Present",
+      "title": "Co-Lead",
+      "company": "University of Maryland Tech Policy Hub",
+      "companyUrl": "https://techpolicyhub.org/"
+    },
+    {
+      "published": true,
+      "date": "2025 – Present",
+      "title": "Founder and Executive Director",
+      "company": "Phronesis Institute",
+      "companyUrl": "https://phronesisresearch.org"
+    },
+    {
+      "published": true,
+      "date": "2022 – Present",
+      "title": "Research Engineer, Causal AI and ML",
+      "company": "SAS Institute",
+      "companyUrl": "https://www.sas.com"
+    },
+    {
+      "published": true,
+      "title": "Regulatory Analyst Intern, AI and Data Policy",
+      "company": "Federal Reserve Board",
+      "companyUrl": "https://www.federalreserve.gov"
+    },
+    {
+      "published": true,
+      "title": "Princeton CITP Siegel Public Interest Technology Fellow",
+      "company": "Consumer Financial Protection Bureau",
+      "companyUrl": "https://www.consumerfinance.gov"
+    },
+    {
+      "published": true,
+      "title": "Research Assistant, Computational Social Science",
+      "company": "MIT Sloan School of Management",
+      "companyUrl": "https://mitsloan.mit.edu"
+    },
+    {
+      "published": true,
+      "title": "Software Engineer, AI/ML",
+      "company": "U.S. Hunger",
+      "companyUrl": "https://ushunger.org"
+    }
+  ]
+}

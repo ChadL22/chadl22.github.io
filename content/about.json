@@ -1,0 +1,22 @@
+{
+  "name": "Sipho C. Langa",
+  "title": "Research Software Engineer",
+  "institution": "SAS Institute",
+  "description": "<p>Professionally, I am a Research Software Engineer working in Causal AI, an area of artificial intelligence concerned with modeling cause-and-effect relationships to support reasoning and inference beyond statistical correlation. Alongside my engineering work, I serve as Co-Lead of the <a href=\"https://techpolicyhub.org/\" target=\"_blank\" rel=\"noopener noreferrer\">University of Maryland Tech Policy Hub</a>, where I contribute to research and policy analysis on technology governance.</p>\n<p>More specifically, my research interests sit at the intersection of technology, policy, and law. Drawing on mechanism design, I examine the relationships between emerging technologies, consumer welfare, market competition, and individual rights. I am particularly interested in how existing legal and institutional frameworks apply to emerging technologies, where they fall short, and how they might evolve.</p>",
+  "email": "sclanga [at] proton [dot] me",
+  "imageUrl": "my-photo.png",
+  "twitterUsername": "sc_langa",
+  "institutionUrl": "https://www.sas.com/",
+  "additionalRoles": [
+    {
+      "title": "Co-Lead",
+      "institution": "University of Maryland Tech Policy Hub",
+      "institutionUrl": "https://techpolicyhub.org/"
+    },
+    {
+      "title": "Founder",
+      "institution": "Phronesis, The Tech Policy Library",
+      "institutionUrl": "https://phronesisresearch.org"
+    }
+  ]
+}

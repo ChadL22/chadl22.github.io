@@ -1,0 +1,304 @@
+# Pages CMS configuration — edit the site at https://app.pagescms.org
+# Every list item has a "Published" switch. New items start as drafts (off) and
+# stay off the site until you switch them on and save. Saving commits to main,
+# which redeploys the site.
+
+media:
+  input: public/papers
+  output: /papers
+
+content:
+  - name: news
+    label: News
+    type: file
+    path: content/news.json
+    format: json
+    fields:
+      - name: items
+        label: News items (newest first; drag to reorder)
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{title} · {date} · published: {published}"
+        fields:
+          - name: published
+            label: Published
+            type: boolean
+            default: false
+            description: 'Off = draft. Drafts are saved but not shown on the site.'
+          - name: date
+            label: Year
+            type: string
+            required: true
+            description: 'Which year tab it appears under, e.g. 2026.'
+          - name: title
+            label: Title
+            type: string
+            required: true
+          - name: description
+            label: Description
+            type: text
+            required: true
+          - name: link
+            label: Link
+            type: string
+            description: 'Optional. The title links here.'
+
+  - name: experience
+    label: Experience
+    type: file
+    path: content/experience.json
+    format: json
+    fields:
+      - name: items
+        label: Roles (current roles first)
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{title} · {company} · published: {published}"
+        fields:
+          - name: published
+            label: Published
+            type: boolean
+            default: false
+            description: 'Off = draft. Drafts are saved but not shown on the site.'
+          - name: title
+            label: Role
+            type: string
+            required: true
+          - name: company
+            label: Organization
+            type: string
+            required: true
+          - name: companyUrl
+            label: Organization link
+            type: string
+          - name: date
+            label: Dates
+            type: string
+            description: 'Only for current roles, e.g. "2026 – Present". Leave blank for past roles; they go on the Previous page.'
+          - name: advisor
+            label: Advisor
+            type: string
+          - name: advisorUrl
+            label: Advisor link
+            type: string
+          - name: manager
+            label: Manager
+            type: string
+          - name: description
+            label: Description
+            type: text
+
+  - name: portfolio
+    label: Research Projects
+    type: file
+    path: content/portfolio.json
+    format: json
+    fields:
+      - name: items
+        label: Projects
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{title} · published: {published}"
+        fields:
+          - name: published
+            label: Published
+            type: boolean
+            default: false
+            description: 'Off = draft. Drafts are saved but not shown on the site.'
+          - name: title
+            label: Title
+            type: string
+            required: true
+          - name: description
+            label: Description
+            type: text
+            required: true
+          - name: technologies
+            label: Tags
+            type: string
+            list: true
+          - name: writtenUrl
+            label: Written version (paper or PDF)
+            type: string
+            description: 'A link, or a PDF uploaded under Media, e.g. /papers/my-paper.pdf. The title links here.'
+          - name: projectUrl
+            label: Live project link
+            type: string
+          - name: codeUrl
+            label: Code or notebook link
+            type: string
+          - name: imageUrl
+            label: Image
+            type: string
+
+  - name: education
+    label: Education
+    type: file
+    path: content/education.json
+    format: json
+    fields:
+      - name: items
+        label: Degrees
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{institution} · published: {published}"
+        fields:
+          - name: published
+            label: Published
+            type: boolean
+            default: false
+            description: 'Off = draft. Drafts are saved but not shown on the site.'
+          - name: institution
+            label: Institution
+            type: string
+            required: true
+          - name: degree
+            label: Degree
+            type: string
+            required: true
+          - name: minor
+            label: Minor
+            type: string
+            description: 'Written out in full, e.g. "Minor: Cognitive Science".'
+          - name: advisor
+            label: Advisor
+            type: string
+          - name: year
+            label: Years
+            type: string
+          - name: thesis
+            label: Thesis
+            type: string
+          - name: thesisUrl
+            label: Thesis link
+            type: string
+
+  - name: publications
+    label: Publications
+    type: file
+    path: content/publications.json
+    format: json
+    fields:
+      - name: items
+        label: Publications (the section appears once one is published)
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{title} · {year} · published: {published}"
+        fields:
+          - name: published
+            label: Published
+            type: boolean
+            default: false
+            description: 'Off = draft. Drafts are saved but not shown on the site.'
+          - name: title
+            label: Title
+            type: string
+            required: true
+          - name: authors
+            label: Authors
+            type: string
+            required: true
+          - name: conference
+            label: Venue
+            type: string
+            required: true
+          - name: year
+            label: Year
+            type: string
+            required: true
+          - name: paperUrl
+            label: Paper link
+            type: string
+          - name: codeUrl
+            label: Code link
+            type: string
+          - name: tldr
+            label: TL;DR
+            type: text
+          - name: award
+            label: Award
+            type: string
+          - name: bibtex
+            label: BibTeX
+            type: text
+          - name: imageUrl
+            label: Image
+            type: string
+
+  - name: about
+    label: About Me & Profile
+    type: file
+    path: content/about.json
+    format: json
+    fields:
+      - name: name
+        label: Name
+        type: string
+        required: true
+      - name: title
+        label: Main role
+        type: string
+        required: true
+      - name: institution
+        label: Main role organization
+        type: string
+        required: true
+      - name: institutionUrl
+        label: Main role organization link
+        type: string
+      - name: additionalRoles
+        label: Other current roles
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{title} · {institution}"
+        fields:
+          - name: title
+            label: Role
+            type: string
+            required: true
+          - name: institution
+            label: Organization
+            type: string
+            required: true
+          - name: institutionUrl
+            label: Organization link
+            type: string
+      - name: description
+        label: About Me text
+        type: text
+        description: 'HTML. Wrap each paragraph in <p>…</p>; links look like <a href="https://…">text</a>.'
+      - name: email
+        label: Email (written to fool spam bots)
+        type: string
+        description: 'e.g. name [at] proton [dot] me'
+      - name: twitterUsername
+        label: Twitter username
+        type: string
+      - name: githubUsername
+        label: GitHub username
+        type: string
+      - name: linkedinUsername
+        label: LinkedIn username
+        type: string
+      - name: googleScholarUrl
+        label: Google Scholar link
+        type: string
+      - name: cvUrl
+        label: CV link
+        type: string
+      - name: imageUrl
+        label: Headshot file
+        type: string
+        description: 'File name in the public folder, e.g. my-photo.png'

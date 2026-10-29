@@ -1,3 +1,6 @@
+import file from "../../content/education.json";
+import { publishedItems } from "./content";
+
 export interface Education {
   year: string;
   institution: string;
@@ -8,21 +11,5 @@ export interface Education {
   thesisUrl?: string;
 }
 
-export const educationData: Education[] = [
-  // If you don't want to show education, just make the array empty.
-  {
-    year: "",
-    institution: "University of Central Florida",
-    degree: "B.S. in Economics and Computational Science",
-    minor: "Minor: Cognitive Science",
-    advisor: "Dr. Sharon Woodill",
-  },
-  //{
-    //year: "2017—2021",
-    //institution: "Massachusetts Institute of Technology",
-    //degree: "B.S. in Computer Science and Mathematics",
-    //thesis: "Algorithmic Approaches to Causal Discovery",
-    // Optional links to thesis
-    // thesisUrl: "https://dspace.mit.edu/handle/1721.1/149111"
-  //},
-];
+// Edit in Pages CMS or content/education.json. Only published items appear on the site.
+export const educationData: Education[] = publishedItems<Education>(file);

@@ -306,3 +306,59 @@ content:
         label: Headshot file
         type: string
         description: 'File name in the public folder, e.g. my-photo.png'
+
+  - name: game
+    label: Dog Game
+    type: file
+    path: content/game.json
+    format: json
+    fields:
+      - name: labName
+        label: 'Lab’s name'
+        type: string
+      - name: springerName
+        label: 'Springer’s name'
+        type: string
+      - name: aussieName
+        label: 'Aussie’s name'
+        type: string
+      - name: squirrelName
+        label: 'Squirrel’s name'
+        type: string
+      - name: duckName
+        label: 'Duck’s name'
+        type: string
+      - name: title
+        label: 'Game title'
+        type: string
+        description: 'Shown top left while playing. {dog} becomes the chasing dog’s name and {quarry} the squirrel’s or duck’s, e.g. Lab & Squirrel.'
+      - name: squirrelEscaped
+        label: 'When the squirrel escapes'
+        type: string
+      - name: duckEscaped
+        label: 'When the duck escapes'
+        type: string
+      - name: nextTurnTouch
+        label: 'Next-turn prompt (phones)'
+        type: string
+      - name: nextTurnKeys
+        label: 'Next-turn prompt (keyboard)'
+        type: string
+      - name: landHintTouch
+        label: 'Controls hint on land (phones)'
+        type: string
+      - name: landHintKeys
+        label: 'Controls hint on land (keyboard)'
+        type: string
+      - name: waterHintTouch
+        label: 'Controls hint underwater (phones)'
+        type: string
+      - name: waterHintKeys
+        label: 'Controls hint underwater (keyboard)'
+        type: string
+      - name: playPromptTouch
+        label: 'Play prompt under the dogs (phones)'
+        type: string
+      - name: playPromptKeys
+        label: 'Play prompt under the dogs (keyboard)'
+        type: string

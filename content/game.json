@@ -1,0 +1,18 @@
+{
+  "labName": "Lab",
+  "springerName": "Springer",
+  "aussieName": "Aussie",
+  "squirrelName": "Squirrel",
+  "duckName": "Duck",
+  "title": "{dog} & {quarry}",
+  "squirrelEscaped": "The squirrel got away!",
+  "duckEscaped": "The duck got away!",
+  "nextTurnTouch": "Tap to give the next dog a turn",
+  "nextTurnKeys": "Space to give the next dog a turn · Esc to exit",
+  "landHintTouch": "Tap right to jump · tap left to crouch",
+  "landHintKeys": "Space or ↑ to jump · ↓ to crawl · Esc to exit",
+  "waterHintTouch": "Underwater! Tap right to swim up · tap left to dive",
+  "waterHintKeys": "Underwater! Space or ↑ to swim up · ↓ to dive",
+  "playPromptTouch": "Tap the dogs to play",
+  "playPromptKeys": "Press Space to play"
+}

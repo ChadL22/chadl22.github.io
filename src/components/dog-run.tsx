@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { gameText as text } from "@/data/game";
 
 /**
  * A chocolate lab, a red merle Australian shepherd and a brown roan English
@@ -11,6 +12,10 @@ import { ChevronDown, ChevronUp } from "lucide-react";
  * At the bottom of the page, Space (or a tap) starts a runner game. Whichever
  * dog is in front at that moment does the chasing, alone. Jump the bushes,
  * hydrants and fences, dive through the tire, and crawl under the fence hole.
+ * A crouch is the mirror of a jump: one press, a short duck, and the dog pops
+ * back up on its own. The course is laid down as you run and leans on how you
+ * play: get good at jumping and more crawl-unders come, get good at crawling and
+ * more jumps come, and the more puddles you leap the more puddles appear.
  * When the chaser fails, it looks sad, the quarry escapes, and the other two
  * dogs run up to play with it.
  */
@@ -24,8 +29,10 @@ type Level = "land" | "water";
 type WaterKind = "fish" | "kelp" | "moss";
 
 const BREEDS: Breed[] = ["lab", "aussie", "springer"];
-const SHORT_NAMES: Record<Breed, string> = { lab: "Lab", aussie: "Aussie", springer: "Springer" };
-const QUARRY_NAMES: Record<Quarry, string> = { squirrel: "Squirrel", duck: "Duck" };
+// Names and messages come from content/game.json (editable in Pages CMS)
+const SHORT_NAMES: Record<Breed, string> = { lab: text.labName, aussie: text.aussieName, springer: text.springerName };
+const QUARRY_NAMES: Record<Quarry, string> = { squirrel: text.squirrelName, duck: text.duckName };
+const ESCAPED: Record<Quarry, string> = { squirrel: text.squirrelEscaped, duck: text.duckEscaped };
 
 /** Deterministic 0..1 noise so scenery looks random but never flickers. */
 function hash(n: number) {
@@ -146,6 +153,11 @@ const JUMP_V = 560; // px/s → ~87px jump
 const START_SPEED = 320; // px/s
 const MAX_SPEED = 720;
 const LEAD_X = 140;
+// A crouch can't be held: one press ducks the dog for about as long as a jump
+// stays in the air, then it stands back up before it can duck again.
+const CROUCH_TIME = 0.5; // s
+const CROUCH_RECOVER = 0.12; // s
+const DIVE_V = 170; // px/s, one kick down underwater (the mirror of a paddle stroke)
 // On narrow screens the stage is laid out at least this wide, then scaled down to fit:
 // smaller dogs and obstacles, and more room to see what's coming.
 const MIN_STAGE_W = 640;
@@ -465,6 +477,7 @@ interface Obstacle {
   w: number;
   h: number; // collision height for jump-over obstacles
   passed?: boolean;
+  cleared?: boolean; // already counted toward the play style (cleared or fallen into)
 }
 
 function drawObstacle(ctx: CanvasRenderingContext2D, o: Obstacle, gy: number) {
@@ -790,8 +803,10 @@ interface Game {
   obstacles: Obstacle[];
   lift: number;
   vy: number;
-  crawlHeld: boolean;
-  crawlUntil: number;
+  crawlUntil: number; // the current crouch (or underwater dive) ends at this clock time
+  crouchReadyAt: number; // no new crouch until the dog has stood back up
+  crouchQueued: boolean; // ↓ pressed mid-air: crouch as soon as the paws touch down
+  style: PlayStyle; // what the course has learned about how this visitor plays
   crashed: boolean;
   followers: Follower[];
   quarry: Quarry;
@@ -849,6 +864,69 @@ function writeBest(v: number) {
   }
 }
 
+/**
+ * The adaptive course. It keeps a running tally of what the player clears and
+ * where they crash, for jumps (bush, hydrant, fence, tire) and crawls (fence
+ * hole), and a puddle rate that climbs every time a puddle is leapt. Whichever
+ * move is going better, the course serves more of the other one. The tally is
+ * saved between runs (halved each new run, so recent play counts most).
+ */
+interface Tally {
+  cleared: number;
+  crashed: number;
+}
+interface PlayStyle {
+  jump: Tally;
+  crouch: Tally;
+  puddle: number; // chance a new obstacle is a puddle
+}
+const STYLE_KEY = "dogrun-style";
+const PUDDLE_BASE = 0.08;
+const PUDDLE_MAX = 0.3;
+const CROUCH_SHARE = 0.25; // share of crawl-unders when both moves go equally well
+
+const freshStyle = (): PlayStyle => ({
+  jump: { cleared: 0, crashed: 0 },
+  crouch: { cleared: 0, crashed: 0 },
+  puddle: PUDDLE_BASE,
+});
+
+/** How reliable a move is, 0..1. A crash weighs as much as several clears. */
+function skill(t: Tally) {
+  return (t.cleared + 4) / (t.cleared + 3 * t.crashed + 5);
+}
+
+/** Positive when jumping is going better than crouching, negative for the reverse. */
+function lean(s: PlayStyle) {
+  return Math.max(-1, Math.min(1, (skill(s.jump) - skill(s.crouch)) * 4));
+}
+
+function readStyle(): PlayStyle {
+  const s = freshStyle();
+  try {
+    const saved = JSON.parse(localStorage.getItem(STYLE_KEY) || "null");
+    if (saved && typeof saved === "object") {
+      for (const k of ["jump", "crouch"] as const) {
+        s[k].cleared = (Number(saved[k]?.cleared) || 0) / 2;
+        s[k].crashed = (Number(saved[k]?.crashed) || 0) / 2;
+      }
+      const p = Number(saved.puddle);
+      if (p > 0) s.puddle = Math.min(PUDDLE_MAX, (p + PUDDLE_BASE) / 2);
+    }
+  } catch {
+    /* nothing saved, or storage unavailable: start neutral */
+  }
+  return s;
+}
+
+function writeStyle(s: PlayStyle) {
+  try {
+    localStorage.setItem(STYLE_KEY, JSON.stringify(s));
+  } catch {
+    /* storage unavailable: the course just won't remember between visits */
+  }
+}
+
 /** Space only starts the game when the dogs are fully on screen. */
 function onScreen(el: HTMLElement) {
   const r = el.getBoundingClientRect();
@@ -876,8 +954,10 @@ export function DogRun() {
     obstacles: [],
     lift: 0,
     vy: 0,
-    crawlHeld: false,
     crawlUntil: 0,
+    crouchReadyAt: 0,
+    crouchQueued: false,
+    style: freshStyle(),
     crashed: false,
     followers: [],
     quarry: "squirrel",
@@ -948,8 +1028,10 @@ export function DogRun() {
       g.obstacles = [];
       g.lift = 0;
       g.vy = 0;
-      g.crawlHeld = false;
       g.crawlUntil = 0;
+      g.crouchReadyAt = 0;
+      g.crouchQueued = false;
+      g.style = readStyle();
       g.crashed = false;
       g.followers = [];
       g.quarry = quarry ?? (Math.random() < 0.5 ? "squirrel" : "duck");
@@ -999,7 +1081,28 @@ export function DogRun() {
         g.swimVy = STROKE_V; // one paddle stroke up
         return;
       }
-      if (g.lift === 0) g.vy = JUMP_V;
+      if (g.lift === 0) {
+        g.vy = JUMP_V;
+        g.crawlUntil = 0; // jumping ends a crouch
+      }
+    };
+
+    // One press, one duck: the dog crouches for CROUCH_TIME and then stands up by itself
+    const crouch = () => {
+      if (g.mode !== "playing" || g.crashed || g.trans) return;
+      if (g.level === "water") {
+        g.swimVy = Math.max(g.swimVy, DIVE_V); // one kick down
+        g.crawlUntil = clock + 0.3; // and sink faster for a moment
+        return;
+      }
+      if (g.lift > 0) {
+        g.vy = Math.min(g.vy, -420); // drop faster
+        g.crouchQueued = true; // and duck on landing
+        return;
+      }
+      if (clock < g.crouchReadyAt) return;
+      g.crawlUntil = clock + CROUCH_TIME;
+      g.crouchReadyAt = g.crawlUntil + CROUCH_RECOVER;
     };
 
     // Mario-style switch between levels: the view closes to a circle, then reopens
@@ -1033,10 +1136,25 @@ export function DogRun() {
       if (T >= 0.9) g.trans = null;
     };
 
-    const isCrawling = () => g.lift === 0 && (g.crawlHeld || clock < g.crawlUntil);
+    const isCrawling = () => g.lift === 0 && clock < g.crawlUntil;
 
-    const crash = () => {
+    // The course learns from every obstacle the chaser clears or crashes into
+    const learn = (kind: ObKind, cleared: boolean) => {
+      const s = g.style;
+      if (kind === "puddle") {
+        // Leaping puddles brings more puddles; falling in eases off a little
+        s.puddle = cleared ? Math.min(PUDDLE_MAX, s.puddle + 0.035) : Math.max(0.05, s.puddle - 0.02);
+        return;
+      }
+      const t = kind === "hole" ? s.crouch : s.jump;
+      if (cleared) t.cleared += 1;
+      else t.crashed += 1;
+    };
+
+    const crash = (by?: ObKind) => {
       g.crashed = true;
+      if (by) learn(by, false);
+      writeStyle(g.style);
       const final = Math.floor(g.score);
       if (final > g.best) {
         g.best = final;
@@ -1068,8 +1186,7 @@ export function DogRun() {
       }
       if (g.mode === "playing" && (e.code === "ArrowDown" || e.code === "KeyS")) {
         e.preventDefault();
-        g.crawlHeld = true;
-        if (g.lift > 0) g.vy = Math.min(g.vy, -420); // drop faster
+        if (!e.repeat) crouch(); // holding the key down doesn't keep the dog low
         return;
       }
       const isJump = e.code === "Space" || (g.mode === "playing" && e.code === "ArrowUp");
@@ -1086,14 +1203,9 @@ export function DogRun() {
         startGame((g.lead + 1) % 3); // the next dog gets a turn
       }
     };
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "ArrowDown" || e.code === "KeyS") g.crawlHeld = false;
-    };
     window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
 
-    // Touch / click: right half jumps (swims up); hold the left half to crouch (dive)
-    let crouchPointer: number | null = null;
+    // Touch / click: right half jumps (swims up); left half crouches (dives)
     const onPointerDown = (e: PointerEvent) => {
       if (g.mode === "ambient") return startIntro();
       if (g.mode === "over") return startGame((g.lead + 1) % 3);
@@ -1101,20 +1213,12 @@ export function DogRun() {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
       if (e.clientX - rect.left < rect.width / 2) {
-        crouchPointer = e.pointerId;
-        g.crawlHeld = true;
-        if (g.lift > 0) g.vy = Math.min(g.vy, -420); // drop faster
+        crouch();
       } else {
         jump();
       }
     };
-    const onPointerEnd = (e: PointerEvent) => {
-      if (e.pointerId === crouchPointer) {
-        crouchPointer = null;
-        g.crawlHeld = false;
-      }
-    };
-    // On phones, holding a finger down (crouch) otherwise starts a long-press:
+    // On phones, a finger left on the screen otherwise starts a long-press:
     // text selection, the magnifier and the copy/share callout. Swallow the raw
     // touch events while a game is on; pointer events above still fire.
     const blockTouch = (e: TouchEvent) => {
@@ -1124,9 +1228,6 @@ export function DogRun() {
       if (g.mode !== "ambient") e.preventDefault();
     };
     canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointerup", onPointerEnd);
-    canvas.addEventListener("pointercancel", onPointerEnd);
-    canvas.addEventListener("pointerleave", onPointerEnd);
     canvas.addEventListener("touchstart", blockTouch, { passive: false });
     canvas.addEventListener("touchmove", blockTouch, { passive: false });
     canvas.addEventListener("touchend", blockTouch, { passive: false });
@@ -1197,12 +1298,16 @@ export function DogRun() {
       }
     };
 
+    // The course is laid down as you run, weighted by how you've been playing
     const pickKind = (): ObKind => {
-      const pool: ObKind[] = ["bush", "hydrant", "fence", "bush", "hydrant", "fence"];
-      if (g.score > 50) pool.push("hole", "hole");
-      if (g.score > 100) pool.push("tire", "tire");
-      if (g.score > 40) pool.push("puddle");
-      return pool[Math.floor(Math.random() * pool.length)];
+      const s = g.style;
+      if (g.score > 40 && Math.random() < s.puddle) return "puddle";
+      // Better at jumping → more crawl-unders; better at crawling → more jumps
+      const crouchShare = g.score > 50 ? Math.max(0.1, Math.min(0.45, CROUCH_SHARE + 0.2 * lean(s))) : 0;
+      if (Math.random() < crouchShare) return "hole";
+      const jumps: ObKind[] = ["bush", "hydrant", "fence"];
+      if (g.score > 100) jumps.push("tire");
+      return jumps[Math.floor(Math.random() * jumps.length)];
     };
 
     const updateWater = (dt: number, w: number, h: number) => {
@@ -1219,7 +1324,7 @@ export function DogRun() {
       }
 
       // Swim physics: sink slowly between strokes; ↓ dives faster
-      const diving = g.crawlHeld || clock < g.crawlUntil;
+      const diving = clock < g.crawlUntil;
       g.swimVy = Math.min(diving ? MAX_SINK * 1.8 : MAX_SINK, g.swimVy + SINK * (diving ? 2.6 : 1) * dt);
       g.swimY += g.swimVy * dt;
       if (g.swimY < SURFACE_Y + 30) {
@@ -1292,6 +1397,11 @@ export function DogRun() {
         if (g.lift <= 0) {
           g.lift = 0;
           g.vy = 0;
+          if (g.crouchQueued && !g.crashed) {
+            g.crouchQueued = false;
+            g.crawlUntil = clock + CROUCH_TIME;
+            g.crouchReadyAt = g.crawlUntil + CROUCH_RECOVER;
+          }
         }
       }
 
@@ -1322,10 +1432,17 @@ export function DogRun() {
           if (o.kind === "tire") {
             const mid = g.lift + 13;
             if (mid < TIRE_INNER_LO || mid > TIRE_INNER_HI) {
-              crash();
+              crash("tire");
               return;
             }
           }
+        }
+      }
+      // Fully behind the chaser without a crash: that one was cleared
+      for (const o of g.obstacles) {
+        if (!o.cleared && o.x + o.w < g.leadX - 16) {
+          o.cleared = true;
+          learn(o.kind, true);
         }
       }
       g.obstacles = g.obstacles.filter((o) => o.x + o.w > -30);
@@ -1350,6 +1467,8 @@ export function DogRun() {
         if (o.kind === "puddle") {
           // Running (not jumping) through the middle of a puddle: splash, down we go
           if (g.lift === 0 && dogCenter > o.x + 12 && dogCenter < o.x + o.w - 12) {
+            learn("puddle", false);
+            o.cleared = true; // counted already
             startTrans("toWater");
             return;
           }
@@ -1357,14 +1476,14 @@ export function DogRun() {
         }
         if (o.kind === "hole") {
           // Must crawl through the gap under the fence
-          if (top > HOLE_GAP + 1 && bottom < HOLE_TOP) return crash();
+          if (top > HOLE_GAP + 1 && bottom < HOLE_TOP) return crash("hole");
         } else if (o.kind === "tire") {
           // The stand blocks a dog that stays low
           const sl = o.x + o.w / 2 - 7;
           const sr = o.x + o.w / 2 + 7;
-          if (right > sl && left < sr && bottom < TIRE_STAND_H - 2) return crash();
+          if (right > sl && left < sr && bottom < TIRE_STAND_H - 2) return crash("tire");
         } else if (bottom < o.h - 3) {
-          return crash();
+          return crash(o.kind);
         }
       }
     };
@@ -1477,20 +1596,24 @@ export function DogRun() {
       ctx.fillText(`HI ${pad(g.best)}  ${pad(Math.floor(g.score))}`, w - 12 / vs, 16 / vs);
       ctx.textAlign = "left";
       ctx.font = font(12);
-      ctx.fillText(`${SHORT_NAMES[breed]} & ${QUARRY_NAMES[g.quarry]}`, 12 / vs, 16 / vs);
+      ctx.fillText(
+        text.title.replace("{dog}", SHORT_NAMES[breed]).replace("{quarry}", QUARRY_NAMES[g.quarry]),
+        12 / vs,
+        16 / vs
+      );
 
       ctx.textAlign = "center";
       ctx.font = font(12);
       if (g.mode === "over") {
         ctx.fillStyle = "#27272A";
         ctx.font = font(13);
-        ctx.fillText(`The ${g.quarry} got away!`, w / 2, 40 / vs);
+        ctx.fillText(ESCAPED[g.quarry], w / 2, 40 / vs);
         ctx.fillStyle = "#52525B";
         ctx.font = font(12);
         ctx.fillText(
           isTouchRef.current
-            ? "Tap to give the next dog a turn"
-            : "Space to give the next dog a turn · Esc to exit",
+            ? text.nextTurnTouch
+            : text.nextTurnKeys,
           w / 2,
           58 / vs
         );
@@ -1501,11 +1624,11 @@ export function DogRun() {
         ctx.fillText(
           water
             ? isTouchRef.current
-              ? "Underwater! Tap right to swim up · hold left to dive"
-              : "Underwater! Space or ↑ to swim up · ↓ to dive"
+              ? text.waterHintTouch
+              : text.waterHintKeys
             : isTouchRef.current
-              ? "Tap right to jump · hold left to crouch"
-              : "Space or ↑ to jump · ↓ to crawl · Esc to exit",
+              ? text.landHintTouch
+              : text.landHintKeys,
           w / 2,
           (water ? 48 : 40) / vs
         );
@@ -1698,11 +1821,7 @@ export function DogRun() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
       canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointerup", onPointerEnd);
-      canvas.removeEventListener("pointercancel", onPointerEnd);
-      canvas.removeEventListener("pointerleave", onPointerEnd);
       canvas.removeEventListener("touchstart", blockTouch);
       canvas.removeEventListener("touchmove", blockTouch);
       canvas.removeEventListener("touchend", blockTouch);
@@ -1735,7 +1854,7 @@ export function DogRun() {
       )}
       {mode === "ambient" && (
         <p className="text-center text-[11px] tracking-wider uppercase text-zinc-400 pt-2">
-          {isTouch ? "Tap the dogs to play" : "Press Space to play"}
+          {isTouch ? text.playPromptTouch : text.playPromptKeys}
         </p>
       )}
     </div>

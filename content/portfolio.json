@@ -14,7 +14,7 @@
     {
       "published": true,
       "title": "Location Technology and the U.S. Fourth Amendment",
-      "description": "A research poster asking how the Supreme Court's reasoning in Chatrie v. United States, which found that obtaining Google Location History through a geofence warrant crossed a constitutional line, extends to other mobile services. It codes the majority, concurrences, and dissents, classifies location data by source, precision, retention, and user involvement, and assesses whether data from ride-sharing apps, social media, streaming platforms, and LLM chats is covered, excluded, or unresolved.",
+      "description": "An ongoing research project examining how the Fourth Amendment, and the Supreme Court decisions that interpret it, apply to location data across technologies and types of data collection. It begins with Chatrie v. United States, which found that obtaining Google Location History through a geofence warrant crossed a constitutional line, and traces the reasoning of its majority, concurrences, and dissents. It classifies location data by source, precision, retention, and user involvement, and assesses whether data from ride-sharing apps, social media, streaming platforms, and LLM chats is covered, excluded, or still unresolved. Early findings were accepted as a poster at EAAMO 2026.",
       "technologies": [
         "Fourth Amendment",
         "Location Data",

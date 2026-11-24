@@ -13,6 +13,16 @@
     },
     {
       "published": true,
+      "title": "Proposed Amendments to the ECPA",
+      "description": "A policy paper arguing that the Electronic Communications Privacy Act of 1986 no longer fits how digital systems generate data about people's behavior, relationships, and movements. Using search engines and LLMs, social media platforms, and vehicle-to-everything (V2X) systems as case studies, it shows how ECPA's distinctions among content, records, and tracking information leave uneven protections. Building on reform bills in the 119th Congress, it proposes amendments to clarify statutory definitions, refine disclosure rules for inferred behavioral and location-related records, and strengthen notice and judicial oversight while preserving lawful investigations.",
+      "technologies": [
+        "Fourth Amendment",
+        "Surveillance Law",
+        "Location Privacy"
+      ]
+    },
+    {
+      "published": true,
       "title": "A New Fairness Doctrine or Something Else?",
       "description": "A policy essay tracing debates over the public's access to information from the FCC's Fairness Doctrine to today's algorithmically curated platforms and AI systems. It weighs paths forward, from a modernized fairness obligation to public-interest duties around recommender design and amplification, and argues the country must decide how it governs access to information in an algorithmic age.",
       "technologies": [

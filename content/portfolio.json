@@ -2,6 +2,17 @@
   "items": [
     {
       "published": true,
+      "title": "Exploring Mechanisms for Regulating Personalized Pricing",
+      "description": "Recent advancements in AI, coupled with greater access to consumer data, have enhanced firms’ ability to estimate consumers’ willingness to pay and maximize profits through personalized pricing. However, these capabilities can come at the expense of consumer welfare. Drawing on economic theory, empirical literature, and legal precedent, this research explores regulatory mechanisms that would allow firms to benefit from personalized pricing without leaving consumers worse off relative to standard pricing practices. Rather than advocating for a categorical prohibition, this project investigates how public policy can reconcile technological innovation, firm profitability, and consumer protection.",
+      "technologies": [
+        "Consumer Protection",
+        "Algorithmic Pricing",
+        "Mechanism Design"
+      ],
+      "writtenUrl": "/papers/personalized-pricing-poster.png"
+    },
+    {
+      "published": true,
       "title": "A New Fairness Doctrine or Something Else?",
       "description": "A policy essay tracing debates over the public's access to information from the FCC's Fairness Doctrine to today's algorithmically curated platforms and AI systems. It weighs paths forward, from a modernized fairness obligation to public-interest duties around recommender design and amplification, and argues the country must decide how it governs access to information in an algorithmic age.",
       "technologies": [
